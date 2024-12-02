@@ -1,0 +1,137 @@
+{
+  "version": "3.0.1",
+  "layout": [
+    {
+      "type": 6,
+      "fields": [],
+      "listFields": [
+        [],
+        [
+          {
+            "type": "Robot",
+            "key": "/RealOutputs/Odometry/Robot",
+            "sourceTypeIndex": 1,
+            "sourceType": "Pose2d"
+          },
+          {
+            "type": "Trajectory",
+            "key": "/RealOutputs/Odometry/Trajectory",
+            "sourceTypeIndex": 2,
+            "sourceType": "Pose2d[]"
+          }
+        ]
+      ],
+      "options": {
+        "field": "2024 Field",
+        "alliance": "blue",
+        "robot": "Crab Bot",
+        "unitDistance": "meters",
+        "unitRotation": "radians",
+        "cameraIndex": -1,
+        "fov": 50
+      },
+      "configHidden": false,
+      "title": "3D Field"
+    },
+    {
+      "type": 10,
+      "fields": [
+        {
+          "key": "/RealOutputs/Arm/Mechanism2d/Goal",
+          "sourceTypeIndex": 0,
+          "sourceType": "Mechanism2d"
+        },
+        {
+          "key": "/RealOutputs/Arm/Mechanism2d/Measured",
+          "sourceTypeIndex": 0,
+          "sourceType": "Mechanism2d"
+        },
+        {
+          "key": "/RealOutputs/Arm/Mechanism2d/Setpoint",
+          "sourceTypeIndex": 0,
+          "sourceType": "Mechanism2d"
+        }
+      ],
+      "listFields": [],
+      "options": {},
+      "configHidden": false,
+      "title": "Mechanism"
+    },
+    {
+      "type": 9,
+      "fields": [
+        {
+          "key": "/RealOutputs/SwerveStates/MeasuredWheelSpeeds",
+          "sourceTypeIndex": 1,
+          "sourceType": "SwerveModuleState[]"
+        },
+        {
+          "key": "/RealOutputs/SwerveStates/DesiredWheelSpeeds",
+          "sourceTypeIndex": 1,
+          "sourceType": "SwerveModuleState[]"
+        },
+        {
+          "key": "/RealOutputs/Odometry/Robot/rotation",
+          "sourceTypeIndex": 1,
+          "sourceType": "Rotation2d"
+        }
+      ],
+      "listFields": [],
+      "options": {
+        "maxSpeed": 3.8,
+        "rotationUnits": "radians",
+        "arrangement": "0,1,2,3",
+        "sizeLeftRight": 0.885,
+        "sizeFrontBack": 0.885,
+        "forwardDirection": "up"
+      },
+      "configHidden": false,
+      "title": "Swerve"
+    },
+    {
+      "type": 5,
+      "fields": [],
+      "listFields": [
+        [
+          {
+            "type": "Robot",
+            "key": "/RealOutputs/Odometry/Robot",
+            "sourceTypeIndex": 1,
+            "sourceType": "Pose2d"
+          }
+        ]
+      ],
+      "options": {
+        "game": "2024 Field",
+        "unitDistance": "meters",
+        "unitRotation": "radians",
+        "origin": "right",
+        "size": 0.885,
+        "allianceBumpers": "auto",
+        "allianceOrigin": "blue",
+        "orientation": "blue left, red right"
+      },
+      "configHidden": false,
+      "title": "Odometry"
+    },
+    {
+      "type": 8,
+      "fields": [],
+      "listFields": [],
+      "options": {
+        "ids": [
+          0,
+          1,
+          2
+        ],
+        "layouts": [
+          "Xbox Controller (White)",
+          "None",
+          "None"
+        ]
+      },
+      "configHidden": false,
+      "title": "Joysticks"
+    }
+  ]
+}
