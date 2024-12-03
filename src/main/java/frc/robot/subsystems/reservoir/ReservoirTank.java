@@ -22,10 +22,9 @@ public class ReservoirTank extends SubsystemBase {
     Logger.processInputs("ReservoirTank", inputs);
   }
 
-
   /**
    * Get whether compressor is currently active and filling reservoir tank
-   * 
+   *
    * @return compressor state
    */
   public boolean isFilling() {
@@ -34,13 +33,13 @@ public class ReservoirTank extends SubsystemBase {
 
   /**
    * Get current pressure of reservoir tank
-   * 
+   *
    * @return pressure in pound per square inch (PSI)
    */
   public double getPressure() {
     return inputs.tankPSI;
   }
-  
+
   /** Sets the setpoint pressure to full. The compressor will try and maintain this pressure. */
   public void setDesiredPressureToFull() {
     setDesiredPressure(ReservoirConstants.FULL_TANK_PSI);

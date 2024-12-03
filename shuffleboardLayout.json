@@ -77,9 +77,9 @@
               "Visuals/Orientation": "VERTICAL"
             }
           },
-          "5,0": {
+          "7,0": {
             "size": [
-              3,
+              2,
               1
             ],
             "content": {
@@ -138,6 +138,79 @@
               "_glyph": 148,
               "_showGlyph": false
             }
+          },
+          "9,1": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Command",
+              "_source0": "network_table:///SmartDashboard/Reset Pose",
+              "_title": "Reset Pose",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "9,2": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Command",
+              "_source0": "network_table:///SmartDashboard/Zero Gyro",
+              "_title": "Zero Gyro",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "9,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Command",
+              "_source0": "network_table:///SmartDashboard/Swerve Offsets",
+              "_title": "Swerve Offsets",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "5,2": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Boolean Box",
+              "_source0": "network_table:///SmartDashboard/Reservoir Filling",
+              "_title": "Reservoir Filling",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Colors/Color when true": "#7CFC00FF",
+              "Colors/Color when false": "#8B0000FF"
+            }
+          },
+          "5,0": {
+            "size": [
+              1,
+              2
+            ],
+            "content": {
+              "_type": "Number Bar",
+              "_source0": "network_table:///SmartDashboard/Reservoir Pressure",
+              "_title": "Reservoir Pressure",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Range/Min": 0.0,
+              "Range/Max": 100.0,
+              "Range/Center": 0.0,
+              "Visuals/Num tick marks": 5,
+              "Visuals/Show text": true,
+              "Visuals/Orientation": "VERTICAL"
+            }
           }
         }
       }
@@ -157,9 +230,9 @@
     }
   ],
   "windowGeometry": {
-    "x": 56.79999923706055,
-    "y": 98.4000015258789,
-    "width": 1386.4000244140625,
-    "height": 565.5999755859375
+    "x": -7.199999809265137,
+    "y": -7.199999809265137,
+    "width": 1550.4000244140625,
+    "height": 830.4000244140625
   }
 }

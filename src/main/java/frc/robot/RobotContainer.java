@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.Mode;
+import frc.robot.Constants.RobotType;
 import frc.robot.commands.SwerveModuleOffsetReader;
 import frc.robot.subsystems.dashboard.DriverDashboard;
 import frc.robot.subsystems.drive.Drive;
@@ -31,8 +32,10 @@ import frc.robot.subsystems.drive.controllers.SpeedController;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
 import frc.robot.subsystems.reservoir.ReservoirIO;
+import frc.robot.subsystems.reservoir.ReservoirIOSim;
 import frc.robot.subsystems.reservoir.ReservoirIOSolenoid;
 import frc.robot.subsystems.reservoir.ReservoirTank;
+import frc.robot.subsystems.vision.AprilTagVision;
 import frc.robot.utility.OverrideSwitch;
 import frc.robot.utility.logging.Alert;
 import frc.robot.utility.logging.Alert.AlertType;
@@ -50,13 +53,18 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final ReservoirTank reservoirTank;
+  private final AprilTagVision vision;
 
   // Controller
   private final CommandGenericHID driverController = new CommandXboxController(0);
   private final CommandGenericHID operatorController = new CommandXboxController(1);
 
-  // Dashboard inputs
-  private final LoggedDashboardChooser<Command> autoChooser;
+  // Driver Information
+  private final DriverDashboard dashboard = DriverDashboard.getInstance();
+
+  // Auto
+  private final LoggedDashboardChooser<Command> autoChooser =
+      new LoggedDashboardChooser<>("Auto Chooser", new SendableChooser<Command>());
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -71,6 +79,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         reservoirTank = new ReservoirTank(new ReservoirIOSolenoid());
+        vision = new AprilTagVision();
         break;
 
       case SIM_BOT:
@@ -82,7 +91,8 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.FRONT_RIGHT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_LEFT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_RIGHT_MODULE_CONFIG));
-        reservoirTank = new ReservoirTank(new ReservoirIO() {});
+        reservoirTank = new ReservoirTank(new ReservoirIOSim());
+        vision = new AprilTagVision();
         break;
 
       default:
@@ -95,34 +105,22 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         reservoirTank = new ReservoirTank(new ReservoirIO() {});
+        vision = new AprilTagVision();
         break;
     }
 
-    // Can also use AutoBuilder.buildAutoChooser(); instead of SendableChooser to
-    // auto populate
-    autoChooser = new LoggedDashboardChooser<>("Auto Chooser", new SendableChooser<Command>());
+    vision.setRobotPoseSupplier(drive::getPose);
+    vision.addVisionEstimateConsumer(
+        (visionEstimate) -> {
+          if (visionEstimate.isSuccess() && Constants.getRobot() != RobotType.SIM_BOT) {
+            drive.addVisionMeasurement(
+                visionEstimate.robotPose2d(),
+                visionEstimate.timestampSeconds(),
+                visionEstimate.standardDeviations());
+          }
+        });
 
-    // Set up SysId routines
-    // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/system-identification/introduction.html
-    autoChooser.addOption(
-        "Drive SysId (Quasistatic Forward)",
-        drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
-    autoChooser.addOption(
-        "Drive SysId (Quasistatic Reverse)",
-        drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-    autoChooser.addOption(
-        "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
-    autoChooser.addOption(
-        "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
-
-    // Set up named commands for path planner auto
-    // https://pathplanner.dev/pplib-named-commands.html
-    NamedCommands.registerCommand("StopWithX", drive.runOnce(drive::stopUsingBrakeArrangement));
-
-    // Path planner Autos
-    // https://pathplanner.dev/gui-editing-paths-and-autos.html#autos
-    autoChooser.addOption("Triangle Auto", new PathPlannerAuto("Triangle Auto"));
-    autoChooser.addOption("Rotate Auto", new PathPlannerAuto("Rotate Auto"));
+    reservoirTank.setDesiredPressureToFull();
 
     // Alerts for constants to avoid using them in competition
     if (Constants.TUNING_MODE) {
@@ -135,21 +133,29 @@ public class RobotContainer {
     }
 
     // Put dashboard defaults
+
     initDashboard();
+
+    // Configure autos
+    configureAutos();
 
     // Configure the button bindings
     configureControllerBindings();
+
+    // Print out robot and mode
+    System.out.printf("Robot %s, Mode: %s", Constants.getRobot(), Constants.getMode());
   }
 
   /** Configure drive dashboard object */
   private void initDashboard() {
-    DriverDashboard dashboard = DriverDashboard.getInstance();
     dashboard.addSubsystem(drive);
     dashboard.setPoseSupplier(drive::getPose);
-    dashboard.setRobotSupplier(drive::getRobotSpeeds);
+    dashboard.setRobotSpeedsSupplier(drive::getRobotSpeeds);
     dashboard.setSpeedLevelSupplier(() -> SpeedController.SpeedLevel.NO_LEVEL);
     dashboard.setFieldRelativeSupplier(() -> false);
     dashboard.setAngleDrivenSupplier(() -> false);
+
+    dashboard.setReservoirTank(reservoirTank::isFilling, reservoirTank::getPressure);
 
     dashboard.addCommand("Reset Pose", () -> drive.resetPose(new Pose2d()), true);
     dashboard.addCommand("Zero Gyro", drive::zeroGyro, true);
@@ -160,6 +166,8 @@ public class RobotContainer {
   /** Define button->command mappings. */
   private void configureControllerBindings() {
     CommandScheduler.getInstance().getActiveButtonLoop().clear();
+    configureDriverControllerBindings();
+    configureOperatorControllerBindings();
   }
 
   private void configureDriverControllerBindings() {
@@ -386,6 +394,30 @@ public class RobotContainer {
 
       operatorXbox.b().whileTrue(Commands.idle(drive).withName("Idle Drive"));
     }
+  }
+
+  public void configureAutos() {
+    // Set up SysId routines
+    // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/system-identification/introduction.html
+    autoChooser.addOption(
+        "Drive SysId (Quasistatic Forward)",
+        drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
+    autoChooser.addOption(
+        "Drive SysId (Quasistatic Reverse)",
+        drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
+    autoChooser.addOption(
+        "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
+    autoChooser.addOption(
+        "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
+
+    // Set up named commands for path planner auto
+    // https://pathplanner.dev/pplib-named-commands.html
+    NamedCommands.registerCommand("StopWithX", drive.runOnce(drive::stopUsingBrakeArrangement));
+
+    // Path planner Autos
+    // https://pathplanner.dev/gui-editing-paths-and-autos.html#autos
+    autoChooser.addOption("Triangle Auto", new PathPlannerAuto("Triangle Auto"));
+    autoChooser.addOption("Rotate Auto", new PathPlannerAuto("Rotate Auto"));
   }
 
   /**

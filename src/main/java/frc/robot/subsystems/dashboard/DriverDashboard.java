@@ -32,6 +32,9 @@ public class DriverDashboard extends SubsystemBase {
   private BooleanSupplier fieldRelativeSupplier;
   private BooleanSupplier angleDrivenSupplier;
 
+  private BooleanSupplier reservoirTankFilling;
+  private Supplier<Double> reservoirTankPressure;
+
   // --- Setters ---
 
   public void addSubsystem(SubsystemBase subsystem) {
@@ -54,7 +57,7 @@ public class DriverDashboard extends SubsystemBase {
     this.poseSupplier = robotPoseSupplier;
   }
 
-  public void setRobotSupplier(Supplier<ChassisSpeeds> robotSpeedsSupplier) {
+  public void setRobotSpeedsSupplier(Supplier<ChassisSpeeds> robotSpeedsSupplier) {
     this.speedsSupplier = robotSpeedsSupplier;
   }
 
@@ -70,8 +73,17 @@ public class DriverDashboard extends SubsystemBase {
     this.angleDrivenSupplier = angleDrivenSupplier;
   }
 
+  public void setReservoirTank(
+      BooleanSupplier reservoirTankFilling, Supplier<Double> reservoirTankPressure) {
+    this.reservoirTankFilling = reservoirTankFilling;
+    this.reservoirTankPressure = reservoirTankPressure;
+  }
+
   @Override
   public void periodic() {
+    // TODO set this up to be more programmatic, and not need a periodic method. Task for someone.
+    // https://docs.wpilib.org/en/stable/docs/software/dashboards/shuffleboard/layouts-with-code/index.html
+    // Example in Commands/SwerveModuleOffsetReader.java
 
     if (poseSupplier != null) {
       Pose2d pose = poseSupplier.get();
@@ -101,6 +113,14 @@ public class DriverDashboard extends SubsystemBase {
 
     if (angleDrivenSupplier != null) {
       SmartDashboard.putBoolean("Angle Driven", angleDrivenSupplier.getAsBoolean());
+    }
+
+    if (reservoirTankFilling != null) {
+      SmartDashboard.putBoolean("Reservoir Filling", reservoirTankFilling.getAsBoolean());
+    }
+
+    if (reservoirTankPressure != null) {
+      SmartDashboard.putNumber("Reservoir Pressure", reservoirTankPressure.get());
     }
   }
 }

@@ -5,7 +5,7 @@ import frc.robot.Constants;
 
 public class ReservoirIOSim implements ReservoirIO {
 
-  private static final double PSI_CHANGE_PER_LOOP = 90.0 * Constants.LOOP_PERIOD_SECONDS;
+  private static final double PSI_CHANGE_PER_SECOND = 1.2;
 
   private double tankPSI;
 
@@ -21,7 +21,7 @@ public class ReservoirIOSim implements ReservoirIO {
     inputs.tankPSI = tankPSI;
     inputs.compressorRunning = controller.calculate(inputs.tankPSI) > 0;
 
-    tankPSI += inputs.compressorRunning ? PSI_CHANGE_PER_LOOP : 0;
+    tankPSI += inputs.compressorRunning ? PSI_CHANGE_PER_SECOND * Constants.LOOP_PERIOD_SECONDS : 0;
   }
 
   @Override

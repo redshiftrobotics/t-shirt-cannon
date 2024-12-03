@@ -4,16 +4,14 @@ import org.littletonrobotics.junction.AutoLog;
 
 public interface GatewayIO {
   @AutoLog
-  public static class GatewayIOInput {
-    boolean filling;
-    float psi;
+  public static class GatewayIOInputs {
+    double tankPSI;
+    boolean isFilling;
   }
 
-  public default void updateInputs(GatewayIOInput inputs) {}
+  public default void updateInputs(GatewayIOInputs inputs) {}
 
-  public default void beginFilling() {}
+  public default void beganFilling() {}
 
-  public default void stopFilling() {}
-
-  public default void fireCannon(byte cannonId) {}
+  public default void stoppedFilling() {}
 }
