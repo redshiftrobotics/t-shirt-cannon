@@ -1,6 +1,5 @@
 package frc.robot.subsystems.reservoir;
 
-import edu.wpi.first.math.controller.BangBangController;
 import frc.robot.Constants;
 
 public class ReservoirIOSim implements ReservoirIO {
@@ -8,24 +7,28 @@ public class ReservoirIOSim implements ReservoirIO {
   private static final double PSI_CHANGE_PER_SECOND = 1.2;
 
   private double tankPSI;
-
-  private BangBangController controller;
+  private boolean compressorRunning;
 
   public ReservoirIOSim() {
     tankPSI = ReservoirConstants.AVERAGE_ATMOSPHERIC_PSI;
-    controller = new BangBangController(ReservoirConstants.PSI_TOLERANCE);
+    compressorRunning = false;
   }
 
   @Override
   public void updateInputs(ReservoirIOInputs inputs) {
     inputs.tankPSI = tankPSI;
-    inputs.compressorRunning = controller.calculate(inputs.tankPSI) > 0;
+    inputs.compressorRunning = compressorRunning;
 
     tankPSI += inputs.compressorRunning ? PSI_CHANGE_PER_SECOND * Constants.LOOP_PERIOD_SECONDS : 0;
   }
 
   @Override
-  public void setTargetPressure(double pressure) {
-    controller.setSetpoint(pressure);
+  public void startCompressor() {
+    compressorRunning = true;
+  }
+
+  @Override
+  public void stopCompressor() {
+    compressorRunning = false;
   }
 }

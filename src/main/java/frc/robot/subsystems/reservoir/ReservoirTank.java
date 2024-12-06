@@ -1,5 +1,6 @@
 package frc.robot.subsystems.reservoir;
 
+import edu.wpi.first.math.controller.BangBangController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
@@ -12,14 +13,25 @@ public class ReservoirTank extends SubsystemBase {
   private final ReservoirIO io;
   private final ReservoirIOInputsAutoLogged inputs = new ReservoirIOInputsAutoLogged();
 
+  private final BangBangController controller;
+
+  /** Create a new ReservoirTank subsystem */
   public ReservoirTank(ReservoirIO io) {
     this.io = io;
+
+    controller = new BangBangController(ReservoirConstants.PSI_TOLERANCE);
   }
 
   @Override
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("ReservoirTank", inputs);
+
+    // if (controller.calculate(inputs.tankPSI) > 0) {
+    //   io.startCompressor();
+    // } else {
+    //   io.stopCompressor();
+    // }
   }
 
   /**
@@ -65,6 +77,14 @@ public class ReservoirTank extends SubsystemBase {
       throw new IllegalArgumentException("Unable to set desired pressure to above max PSI");
     }
 
-    io.setTargetPressure(psi);
+    controller.setSetpoint(psi);
+  }
+
+  public void forceEnableCompressor() {
+    io.startCompressor();
+  }
+
+  public void forceDisableCompressor() {
+    io.stopCompressor();
   }
 }

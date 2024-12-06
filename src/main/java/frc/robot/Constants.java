@@ -18,7 +18,9 @@ public final class Constants {
 
   public static final boolean TUNING_MODE = false;
 
-  private static RobotType robotType = RobotType.SIM_BOT;
+  public static final boolean SHOW_SYS_ID_AUTOS = false;
+
+  private static RobotType robotType = RobotType.TEST_BOT;
 
   public static RobotType getRobot() {
     if (RobotBase.isReal() && robotType == RobotType.SIM_BOT) {
@@ -32,7 +34,7 @@ public final class Constants {
 
   public static Mode getMode() {
     return switch (getRobot()) {
-      case CANNON_BOT -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
+      case CANNON_BOT, TEST_BOT -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
       case SIM_BOT -> Mode.SIM;
     };
   }
@@ -50,7 +52,8 @@ public final class Constants {
 
   public enum RobotType {
     SIM_BOT,
-    CANNON_BOT
+    CANNON_BOT,
+    TEST_BOT,
   }
 
   /** Checks whether the correct robot is selected when deploying. */

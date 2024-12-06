@@ -42,7 +42,7 @@ public class DriveConstants {
             new Translation2d(0.9612, 0.9612),
             5.05968,
             14.5);
-        case SIM_BOT -> new DriveConfig(
+        default -> new DriveConfig(
             Units.inchesToMeters(2),
             new Translation2d(0.885, 0.885),
             new Translation2d(0.9612, 0.9612),
@@ -141,15 +141,15 @@ public class DriveConstants {
 
   public static final ModuleConstants MODULE_CONSTANTS =
       switch (Constants.getRobot()) {
-        case SIM_BOT -> new ModuleConstants(
-            new FeedForward(0.1, 3.12, 0.40),
-            new PID(0.1, 0.0, 0.0),
-            new PID(10.0, 0.0, 0.0),
-            Mk4iReductions.L3.reduction,
-            Mk4iReductions.TURN.reduction);
         case CANNON_BOT -> new ModuleConstants(
             new FeedForward(0.1, 2.35, 0.53),
             new PID(0.000006, 0.0, 0.0),
+            new PID(10.0, 0.0, 0.0),
+            Mk4iReductions.L3.reduction,
+            Mk4iReductions.TURN.reduction);
+        default -> new ModuleConstants(
+            new FeedForward(0.1, 3.12, 0.40),
+            new PID(0.1, 0.0, 0.0),
             new PID(10.0, 0.0, 0.0),
             Mk4iReductions.L3.reduction,
             Mk4iReductions.TURN.reduction);

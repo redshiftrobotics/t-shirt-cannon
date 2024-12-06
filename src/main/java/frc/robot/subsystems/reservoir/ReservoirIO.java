@@ -9,8 +9,10 @@ public interface ReservoirIO {
     boolean compressorRunning = false;
   }
 
-  public default void setTargetPressure(double pressure) {}
-
   /** Updates the set of loggable inputs. */
   public default void updateInputs(ReservoirIOInputs inputs) {}
+
+  public default void startCompressor() {}
+
+  public default void stopCompressor() {}
 }

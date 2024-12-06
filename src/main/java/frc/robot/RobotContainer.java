@@ -1,5 +1,6 @@
 package frc.robot;
 
+import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -21,6 +22,10 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.Mode;
 import frc.robot.Constants.RobotType;
 import frc.robot.commands.SwerveModuleOffsetReader;
+import frc.robot.subsystems.cannon.CannonIO;
+import frc.robot.subsystems.cannon.CannonIOHardware;
+import frc.robot.subsystems.cannon.CannonIOSim;
+import frc.robot.subsystems.cannon.FiringTube;
 import frc.robot.subsystems.dashboard.DriverDashboard;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
@@ -31,9 +36,13 @@ import frc.robot.subsystems.drive.controllers.HeadingController;
 import frc.robot.subsystems.drive.controllers.SpeedController;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
+import frc.robot.subsystems.gateway.GatewayIO;
+import frc.robot.subsystems.gateway.GatewayIOHardware;
+import frc.robot.subsystems.gateway.GatewayIOSim;
+import frc.robot.subsystems.gateway.GatewayTank;
 import frc.robot.subsystems.reservoir.ReservoirIO;
+import frc.robot.subsystems.reservoir.ReservoirIODigital;
 import frc.robot.subsystems.reservoir.ReservoirIOSim;
-import frc.robot.subsystems.reservoir.ReservoirIOSolenoid;
 import frc.robot.subsystems.reservoir.ReservoirTank;
 import frc.robot.subsystems.vision.AprilTagVision;
 import frc.robot.utility.OverrideSwitch;
@@ -52,8 +61,11 @@ public class RobotContainer {
 
   // Subsystems
   private final Drive drive;
-  private final ReservoirTank reservoirTank;
   private final AprilTagVision vision;
+
+  private final ReservoirTank reservoirTank;
+  private final GatewayTank gatewayTank;
+  private final FiringTube firingTube;
 
   // Controller
   private final CommandGenericHID driverController = new CommandXboxController(0);
@@ -78,8 +90,10 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-        reservoirTank = new ReservoirTank(new ReservoirIOSolenoid());
         vision = new AprilTagVision();
+        reservoirTank = new ReservoirTank(new ReservoirIODigital());
+        gatewayTank = new GatewayTank(new GatewayIOHardware());
+        firingTube = new FiringTube(new CannonIOHardware(), "Main");
         break;
 
       case SIM_BOT:
@@ -91,8 +105,25 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.FRONT_RIGHT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_LEFT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_RIGHT_MODULE_CONFIG));
-        reservoirTank = new ReservoirTank(new ReservoirIOSim());
         vision = new AprilTagVision();
+        reservoirTank = new ReservoirTank(new ReservoirIOSim());
+        gatewayTank = new GatewayTank(new GatewayIOSim());
+        firingTube = new FiringTube(new CannonIOSim(), "Main");
+        break;
+
+      case TEST_BOT:
+        // Test robot, disable IO implementations for most
+        drive =
+            new Drive(
+                new GyroIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {});
+        vision = new AprilTagVision();
+        reservoirTank = new ReservoirTank(new ReservoirIODigital() {});
+        gatewayTank = new GatewayTank(new GatewayIO() {});
+        firingTube = new FiringTube(new CannonIO() {}, "Main");
         break;
 
       default:
@@ -104,8 +135,10 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-        reservoirTank = new ReservoirTank(new ReservoirIO() {});
         vision = new AprilTagVision();
+        reservoirTank = new ReservoirTank(new ReservoirIO() {});
+        gatewayTank = new GatewayTank(new GatewayIO() {});
+        firingTube = new FiringTube(new CannonIO() {}, "Main");
         break;
     }
 
@@ -120,7 +153,7 @@ public class RobotContainer {
           }
         });
 
-    reservoirTank.setDesiredPressureToFull();
+    // reservoirTank.setDesiredPressureToFull();
 
     // Alerts for constants to avoid using them in competition
     if (Constants.TUNING_MODE) {
@@ -138,6 +171,10 @@ public class RobotContainer {
 
     // Configure autos
     configureAutos();
+
+    if (Constants.SHOW_SYS_ID_AUTOS) {
+      configureSysIds();
+    }
 
     // Configure the button bindings
     configureControllerBindings();
@@ -161,6 +198,13 @@ public class RobotContainer {
     dashboard.addCommand("Zero Gyro", drive::zeroGyro, true);
 
     dashboard.addCommand("Swerve Offsets", new SwerveModuleOffsetReader(drive), true);
+
+    dashboard.addCommand(
+        "Pathfind To Speaker",
+        AutoBuilder.pathfindToPose(
+            new Pose2d(new Translation2d(1.377, 5.567), Rotation2d.fromDegrees(180)),
+            DriveConstants.PATH_CONSTRAINS),
+        false);
   }
 
   /** Define button->command mappings. */
@@ -392,11 +436,12 @@ public class RobotContainer {
     if (operatorController instanceof CommandXboxController) {
       final CommandXboxController operatorXbox = (CommandXboxController) operatorController;
 
-      operatorXbox.b().whileTrue(Commands.idle(drive).withName("Idle Drive"));
+      operatorXbox.a().onTrue(reservoirTank.runOnce(reservoirTank::forceEnableCompressor));
+      operatorXbox.b().onTrue(reservoirTank.runOnce(reservoirTank::forceDisableCompressor));
     }
   }
 
-  public void configureAutos() {
+  public void configureSysIds() {
     // Set up SysId routines
     // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/system-identification/introduction.html
     autoChooser.addOption(
@@ -409,7 +454,9 @@ public class RobotContainer {
         "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
+  }
 
+  public void configureAutos() {
     // Set up named commands for path planner auto
     // https://pathplanner.dev/pplib-named-commands.html
     NamedCommands.registerCommand("StopWithX", drive.runOnce(drive::stopUsingBrakeArrangement));

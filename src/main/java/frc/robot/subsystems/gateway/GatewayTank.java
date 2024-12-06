@@ -1,5 +1,6 @@
 package frc.robot.subsystems.gateway;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.BangBangController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
@@ -10,6 +11,7 @@ public class GatewayTank extends SubsystemBase {
 
   private final BangBangController controller;
 
+  /** Creates a new GatewayTank subsystem */
   public GatewayTank(GatewayIO io) {
     this.io = io;
 
@@ -22,7 +24,7 @@ public class GatewayTank extends SubsystemBase {
     Logger.processInputs("GatewayTank", inputs);
 
     double output = controller.calculate(inputs.tankPSI);
-    
+
     if (output > 0) {
       io.beganFilling();
     } else {
@@ -56,7 +58,21 @@ public class GatewayTank extends SubsystemBase {
     controller.setSetpoint(psi);
   }
 
-  public void setDistanceToTarget() {
+  /**
+   * Sets the pressure of the gateway tank to the correct pressure to launch t-shirt given distance.
+   *
+   * @param distance setpoint distance in meters
+   */
+  public void setDistanceToTarget(double distance) {
+    double psi = 0;
+    setDesiredPressure(MathUtil.clamp(psi, 0, GatewayConstants.FULL_TANK_PSI));
+  }
 
+  public void forceEnableOpen() {
+    io.beganFilling();
+  }
+
+  public void forceEnableClose() {
+    io.stoppedFilling();
   }
 }

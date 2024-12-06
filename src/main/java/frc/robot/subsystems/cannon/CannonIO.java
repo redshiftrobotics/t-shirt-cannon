@@ -8,9 +8,9 @@ public interface CannonIO {
     boolean isOpen;
   }
 
-  public void updateInputs(CannonIOInputs inputs);
+  public default void updateInputs(CannonIOInputs inputs) {}
 
-  public void open();
+  public default void open() {}
 
-  public void close();
+  public default void close() {}
 }

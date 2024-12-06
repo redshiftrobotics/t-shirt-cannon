@@ -12,7 +12,7 @@ public class FlywheelConstants {
   public static final FlywheelConfig FLYWHEEL_CONFIG =
       switch (Constants.getRobot()) {
         case CANNON_BOT -> new FlywheelConfig(0, 1, false, false);
-        case SIM_BOT -> new FlywheelConfig(0, 1, false, false);
+        default -> new FlywheelConfig(0, 1, false, false);
       };
 
   public record PID(double Kp, double Ki, double Kd) {}

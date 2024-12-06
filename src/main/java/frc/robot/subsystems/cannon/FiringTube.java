@@ -1,24 +1,26 @@
 package frc.robot.subsystems.cannon;
 
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
-public class FiringTube extends SubsystemBase {
+public class FiringTube {
   private final CannonIO io;
   private final CannonIOInputsAutoLogged inputs = new CannonIOInputsAutoLogged();
 
+  private final String name;
+
   private final Timer fireTimer;
 
-  public FiringTube(CannonIO io) {
+  /** Creates a new FiringTube subsystem */
+  public FiringTube(CannonIO io, String name) {
     this.io = io;
+    this.name = name;
     fireTimer = new Timer();
   }
 
-  @Override
   public void periodic() {
     io.updateInputs(inputs);
-    Logger.processInputs("FiringTube", inputs);
+    Logger.processInputs("FiringTube" + name, inputs);
 
     if (fireTimer.hasElapsed(CannonConstants.FIRE_TUBE_OPEN_TIME_SECONDS)) {
       io.close();
@@ -26,9 +28,7 @@ public class FiringTube extends SubsystemBase {
     }
   }
 
-  /**
-   * Opens the firing tube and starts the timer to close it.
-   */
+  /** Opens the firing tube and starts the timer to close it. */
   public void fire() {
     io.open();
     fireTimer.restart();
@@ -36,7 +36,7 @@ public class FiringTube extends SubsystemBase {
 
   /**
    * Returns whether the firing tube is open.
-   * 
+   *
    * @return true if the firing tube is open, false otherwise
    */
   public boolean isOpen() {
