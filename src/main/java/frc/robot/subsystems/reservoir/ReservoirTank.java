@@ -11,8 +11,8 @@ import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Subsystem of t-shirt cannon robot representing the reservoir tank and its sensors and the compressor which fills
- * it.
+ * Subsystem of t-shirt cannon robot representing the reservoir tank and its sensors and the
+ * compressor which fills it.
  */
 public class ReservoirTank extends SubsystemBase {
 
@@ -48,6 +48,8 @@ public class ReservoirTank extends SubsystemBase {
     Logger.recordOutput("ReservoirTank/status", getStatusString());
   }
 
+  // --- Getters ---
+
   /**
    * Get whether compressor is currently active and filling reservoir tank
    *
@@ -65,6 +67,8 @@ public class ReservoirTank extends SubsystemBase {
   public double getPressure() {
     return inputs.tankPSI;
   }
+
+  // --- Setters ---
 
   /** Sets the setpoint pressure to none. The compressor will not activate. */
   public void stopFilling() {
@@ -107,6 +111,19 @@ public class ReservoirTank extends SubsystemBase {
     controller.setThresholds(minPressure, maxPressure);
   }
 
+  // --- Sim Drain ---
+
+  /**
+   * Sets a supplier that tells the sim whether it is draining.
+   *
+   * @param isDrainingSupplier A supplier that returns true if the tank is draining air.
+   */
+  public void setSimDrain(BooleanSupplier isDrainingSupplier) {
+    this.io.setSimDrain(isDrainingSupplier);
+  }
+
+  // --- Pause Conditions ---
+
   public void addPauseFillingCondition(BooleanSupplier condition, String reason) {
     pauseConditions.add(new PauseCondition(condition, reason));
   }
@@ -131,10 +148,10 @@ public class ReservoirTank extends SubsystemBase {
 
   public String getStatusString() {
     if (isFilling()) {
-      return String.format("Filling to %.2f PSI", controller.getUpperThreshold());
-    } else if (!controller.isOn()) {
+      return String.format("Filling to %.2f PSI (End threshold)", controller.getUpperThreshold());
+    } else if (!controller.isOn() && getPressure() > controller.getLowerThreshold()) {
       return String.format(
-          "Waiting to fill till pressure below %.2f PSI", controller.getLowerThreshold());
+          "Stopped till %.2f PSI (Start threshold)", controller.getLowerThreshold());
     }
     if (shouldPauseFilling()) {
       return "Paused: " + getPauseReason().orElse("Unknown");

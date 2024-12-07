@@ -26,6 +26,8 @@ public class GatewayTank extends SubsystemBase {
 
   private final ArrayList<PauseCondition> pauseConditions;
 
+  private double targetShotDistance;
+
   /** Create a new GatewayTank subsystem */
   public GatewayTank(GatewayIO io) {
     this.io = io;
@@ -53,6 +55,8 @@ public class GatewayTank extends SubsystemBase {
     Logger.recordOutput("GatewayTank/status", getStatusString());
   }
 
+  // --- Getters ---
+
   /**
    * Get whether compressor is currently active and filling Gateway tank
    *
@@ -72,20 +76,46 @@ public class GatewayTank extends SubsystemBase {
   }
 
   /**
+   * Get whether pressure is within the tolerance range
+   *
+   * @return true if pressure is within tolerance range, false otherwise
+   */
+  public boolean isPressureWithinTolerance() {
+    return MathUtil.isNear(
+        getPressure(),
+        shotTable.getDesiredPSI(targetShotDistance),
+        GatewayConstants.TOLERANCE_PRESSURE);
+  }
+
+  /**
    * Get the estimated distance the t-shirt will travel based on the current pressure in the gateway
-   * 
+   *
    * @return distance in meters
    */
-  public double getDistance() {
+  public double getEstimatedLaunchDistance() {
     return shotTable.getEstimatedLaunchDistance(inputs.tankPSI);
   }
 
   /**
+   * Get the target distance the t-shirt will travel
+   *
+   * @return distance in meters
+   */
+  public double getTargetLaunchDistance() {
+    return targetShotDistance;
+  }
+
+  // --- Setters ---
+
+  /**
    * Set the target distance the t-shirt will travel, changes target pressure of the gateway tank
-   * 
+   *
    * @param distance in meters
    */
-  public void setDistance(double distance) {
+  public void setTargetLaunchDistance(double distance) {
+    distance =
+        MathUtil.clamp(
+            distance, GatewayConstants.MIN_SHOT_DISTANCE, GatewayConstants.MAX_SHOT_DISTANCE);
     setDesiredPSI(shotTable.getDesiredPSI(distance));
   }
 
@@ -95,14 +125,34 @@ public class GatewayTank extends SubsystemBase {
    * @param psi target pressure in psi (pound per square inch)
    */
   public void setDesiredPSI(double psi) {
-    psi = MathUtil.clamp(psi, GatewayConstants.MIN_ALLOWED_PRESSURE, GatewayConstants.MAX_ALLOWED_PRESSURE);
-    controller.setThresholds(Math.max(psi - GatewayConstants.PRESSURE_TOLERANCE, GatewayConstants.MIN_ALLOWED_PRESSURE), psi);
+    double min = GatewayConstants.MIN_ALLOWED_PRESSURE;
+    double max = GatewayConstants.MAX_ALLOWED_PRESSURE;
+    double tolerance = GatewayConstants.TOLERANCE_PRESSURE;
+
+    psi = MathUtil.clamp(psi, min, max);
+
+    controller.setThresholds(Math.max(psi - tolerance, min), psi);
+
+    targetShotDistance = shotTable.getEstimatedLaunchDistance(psi);
   }
 
   /** Sets the setpoint pressure to none. The compressor will not activate. */
   public void stopFilling() {
     controller.setThresholds(0, 0);
   }
+
+  // --- Sim Drain ---
+
+  /**
+   * Sets a supplier that tells the sim whether it is draining.
+   *
+   * @param isDrainingSupplier A supplier that returns true if the tank is draining air.
+   */
+  public void setSimDrain(BooleanSupplier isDrainingSupplier) {
+    this.io.setSimDrain(isDrainingSupplier);
+  }
+
+  // --- Pause Conditions ---
 
   public void addPauseFillingCondition(BooleanSupplier condition, String reason) {
     pauseConditions.add(new PauseCondition(condition, reason));
@@ -128,12 +178,10 @@ public class GatewayTank extends SubsystemBase {
 
   public String getStatusString() {
     if (isFilling()) {
+      return String.format("Filling to %.2f PSI (End threshold)", controller.getUpperThreshold());
+    } else if (!controller.isOn() && getPressure() > controller.getLowerThreshold()) {
       return String.format(
-          "Filling to %.2f PSI for a distance of %.2f meters",
-          controller.getUpperThreshold());
-    } else if (!controller.isOn()) {
-      return String.format(
-          "Waiting to fill till pressure below %.2f PSI", controller.getLowerThreshold());
+          "Stopped till %.2f PSI (Start threshold)", controller.getLowerThreshold());
     }
     if (shouldPauseFilling()) {
       return "Paused: " + getPauseReason().orElse("Unknown");

@@ -6,5 +6,8 @@ public class GatewayConstants {
   public static final double MIN_ALLOWED_PRESSURE = 0;
   public static final double MAX_ALLOWED_PRESSURE = 100;
 
-  public static final double PRESSURE_TOLERANCE = 5;
+  public static final double TOLERANCE_PRESSURE = 5;
+
+  public static final double MIN_SHOT_DISTANCE = 10;
+  public static final double MAX_SHOT_DISTANCE = 100;
 }

@@ -7,8 +7,8 @@
       "widgetPane": {
         "gridSize": 128.0,
         "showGrid": true,
-        "hgap": 16.0,
-        "vgap": 16.0,
+        "hgap": 8.0,
+        "vgap": 8.0,
         "titleType": 0,
         "tiles": {
           "1,0": {
@@ -77,7 +77,7 @@
               "Visuals/Orientation": "VERTICAL"
             }
           },
-          "7,0": {
+          "0,3": {
             "size": [
               2,
               1
@@ -139,7 +139,7 @@
               "_showGlyph": false
             }
           },
-          "9,1": {
+          "2,3": {
             "size": [
               1,
               1
@@ -152,33 +152,7 @@
               "_showGlyph": false
             }
           },
-          "9,2": {
-            "size": [
-              1,
-              1
-            ],
-            "content": {
-              "_type": "Command",
-              "_source0": "network_table:///SmartDashboard/Zero Gyro",
-              "_title": "Zero Gyro",
-              "_glyph": 148,
-              "_showGlyph": false
-            }
-          },
-          "9,0": {
-            "size": [
-              1,
-              1
-            ],
-            "content": {
-              "_type": "Command",
-              "_source0": "network_table:///SmartDashboard/Swerve Offsets",
-              "_title": "Swerve Offsets",
-              "_glyph": 148,
-              "_showGlyph": false
-            }
-          },
-          "5,2": {
+          "6,0": {
             "size": [
               1,
               1
@@ -196,12 +170,59 @@
           "5,0": {
             "size": [
               1,
-              2
+              1
             ],
             "content": {
               "_type": "Number Bar",
               "_source0": "network_table:///SmartDashboard/Reservoir Pressure",
               "_title": "Reservoir Pressure",
+              "_glyph": 124,
+              "_showGlyph": false,
+              "Range/Min": 0.0,
+              "Range/Max": 100.0,
+              "Range/Center": 0.0,
+              "Visuals/Num tick marks": 5,
+              "Visuals/Show text": true,
+              "Visuals/Orientation": "HORIZONTAL"
+            }
+          },
+          "5,1": {
+            "size": [
+              2,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Reservoir Status",
+              "_title": "Reservoir Status",
+              "_glyph": 52,
+              "_showGlyph": false
+            }
+          },
+          "9,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Boolean Box",
+              "_source0": "network_table:///SmartDashboard/Gateway Filling",
+              "_title": "Gateway Filling",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Colors/Color when true": "#7CFC00FF",
+              "Colors/Color when false": "#8B0000FF"
+            }
+          },
+          "8,0": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Number Bar",
+              "_source0": "network_table:///SmartDashboard/Gateway Pressure",
+              "_title": "Gateway Pressure",
               "_glyph": 148,
               "_showGlyph": false,
               "Range/Min": 0.0,
@@ -209,7 +230,86 @@
               "Range/Center": 0.0,
               "Visuals/Num tick marks": 5,
               "Visuals/Show text": true,
-              "Visuals/Orientation": "VERTICAL"
+              "Visuals/Orientation": "HORIZONTAL"
+            }
+          },
+          "8,1": {
+            "size": [
+              2,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Gateway Status",
+              "_title": "Gateway Status",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "3,3": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Command",
+              "_source0": "network_table:///SmartDashboard/Reset Rotation",
+              "_title": "Reset Rotation",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "6,3": {
+            "size": [
+              2,
+              1
+            ],
+            "content": {
+              "_type": "Number Bar",
+              "_source0": "network_table:///SmartDashboard/Target Launch Distance",
+              "_title": "Target Launch Distance",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Range/Min": 0.0,
+              "Range/Max": 100.0,
+              "Range/Center": 0.0,
+              "Visuals/Num tick marks": 5,
+              "Visuals/Show text": true,
+              "Visuals/Orientation": "HORIZONTAL"
+            }
+          },
+          "5,3": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Boolean Box",
+              "_source0": "network_table:///SmartDashboard/Fire Accurate",
+              "_title": "Fire Accurate",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Colors/Color when true": "#7CFC00FF",
+              "Colors/Color when false": "#8B0000FF"
+            }
+          },
+          "8,3": {
+            "size": [
+              2,
+              1
+            ],
+            "content": {
+              "_type": "Number Bar",
+              "_source0": "network_table:///SmartDashboard/Estimated Launch Distance",
+              "_title": "Estimated Launch Distance",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Range/Min": 0.0,
+              "Range/Max": 100.0,
+              "Range/Center": 0.0,
+              "Visuals/Num tick marks": 5,
+              "Visuals/Show text": true,
+              "Visuals/Orientation": "HORIZONTAL"
             }
           }
         }

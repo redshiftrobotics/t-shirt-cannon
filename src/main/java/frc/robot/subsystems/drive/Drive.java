@@ -32,6 +32,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.utility.AllianceFlipUtil;
 import frc.robot.utility.LocalADStarAK;
+import frc.robot.utility.logging.Alert;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -61,6 +62,9 @@ public class Drive extends SubsystemBase {
 
   private Rotation2d rawGyroRotation = new Rotation2d();
   private Pose2d pose = new Pose2d();
+
+  private final Alert gyroConnectionAlert =
+      new Alert("Gyro Disconnected! Using fallback.", Alert.AlertType.ERROR);
 
   /**
    * Creates a new drivetrain for robot
@@ -216,10 +220,12 @@ public class Drive extends SubsystemBase {
       if (gyroInputs.connected) {
         // Use the real gyro angle
         rawGyroRotation = gyroInputs.odometryYawPositions[i];
+        gyroConnectionAlert.set(false);
       } else {
         // Fallback option: use the delta of swerve module to create estimated amount twisted
         Twist2d twist = kinematics.toTwist2d(moduleDeltas);
         rawGyroRotation = rawGyroRotation.plus(new Rotation2d(twist.dtheta));
+        gyroConnectionAlert.set(true);
       }
 
       // Apply update to pose estimator
@@ -243,7 +249,6 @@ public class Drive extends SubsystemBase {
    * @param pose new position robot believes it is located at
    */
   public void resetPose(Pose2d pose) {
-
     poseEstimator.resetPosition(rawGyroRotation, getWheelPositions(), pose);
   }
 

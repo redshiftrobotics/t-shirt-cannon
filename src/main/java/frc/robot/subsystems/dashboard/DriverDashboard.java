@@ -4,12 +4,12 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.utility.NormUtil;
 import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class DriverDashboard extends SubsystemBase {
@@ -41,6 +41,10 @@ public class DriverDashboard extends SubsystemBase {
   private Supplier<Double> gatewayTankPressure;
   private Supplier<String> gatewayTankStatus;
 
+  private BooleanSupplier readyToFireSupplier;
+  private DoubleSupplier targetLaunchDistance;
+  private DoubleSupplier estimatedLaunchDistance;
+
   // --- Setters ---
 
   public void addSubsystem(SubsystemBase subsystem) {
@@ -49,10 +53,6 @@ public class DriverDashboard extends SubsystemBase {
     } else {
       throw new IllegalArgumentException("Unknown subsystem can not be added to driver dashboard");
     }
-  }
-
-  public void addCommand(String name, Runnable runnable, boolean runsWhenDisabled) {
-    addCommand(name, Commands.runOnce(runnable), runsWhenDisabled);
   }
 
   public void addCommand(String name, Command command, boolean runsWhenDisabled) {
@@ -86,6 +86,24 @@ public class DriverDashboard extends SubsystemBase {
     this.reservoirTankFilling = reservoirTankFilling;
     this.reservoirTankPressure = reservoirTankPressure;
     this.reservoirTankStatus = reservoirTankStatus;
+  }
+
+  public void setGatewayTank(
+      BooleanSupplier gatewayTankFilling,
+      Supplier<Double> gatewayTankPressure,
+      Supplier<String> gatewayTankStatus) {
+    this.gatewayTankFilling = gatewayTankFilling;
+    this.gatewayTankPressure = gatewayTankPressure;
+    this.gatewayTankStatus = gatewayTankStatus;
+  }
+
+  public void setCannon(
+      BooleanSupplier readyToFireSupplier,
+      DoubleSupplier targetLaunchDistance,
+      DoubleSupplier estimatedLaunchDistance) {
+    this.readyToFireSupplier = readyToFireSupplier;
+    this.targetLaunchDistance = targetLaunchDistance;
+    this.estimatedLaunchDistance = estimatedLaunchDistance;
   }
 
   @Override
@@ -133,6 +151,30 @@ public class DriverDashboard extends SubsystemBase {
 
     if (reservoirTankStatus != null) {
       SmartDashboard.putString("Reservoir Status", reservoirTankStatus.get());
+    }
+
+    if (gatewayTankFilling != null) {
+      SmartDashboard.putBoolean("Gateway Filling", gatewayTankFilling.getAsBoolean());
+    }
+
+    if (gatewayTankPressure != null) {
+      SmartDashboard.putNumber("Gateway Pressure", gatewayTankPressure.get());
+    }
+
+    if (gatewayTankStatus != null) {
+      SmartDashboard.putString("Gateway Status", gatewayTankStatus.get());
+    }
+
+    if (readyToFireSupplier != null) {
+      SmartDashboard.putBoolean("Fire Accurate", readyToFireSupplier.getAsBoolean());
+    }
+
+    if (targetLaunchDistance != null) {
+      SmartDashboard.putNumber("Target Launch Distance", targetLaunchDistance.getAsDouble());
+    }
+
+    if (estimatedLaunchDistance != null) {
+      SmartDashboard.putNumber("Estimated Launch Distance", estimatedLaunchDistance.getAsDouble());
     }
   }
 }

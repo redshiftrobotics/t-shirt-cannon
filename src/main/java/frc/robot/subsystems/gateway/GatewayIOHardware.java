@@ -5,12 +5,12 @@ import frc.robot.hardwareWrappers.CustomPneumaticHub;
 
 public class GatewayIOHardware implements GatewayIO {
 
-  private CustomPneumaticHub hub;
-  private Solenoid solenoid;
+  private final Solenoid solenoid;
 
   public GatewayIOHardware() {
-    hub = new CustomPneumaticHub();
-    solenoid = hub.makeSolenoid(15);
+    try (CustomPneumaticHub hub = new CustomPneumaticHub()) {
+      solenoid = hub.makeSolenoid(15);
+    }
   }
 
   @Override

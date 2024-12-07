@@ -4,6 +4,10 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+/**
+ * A subsystem that controls many firing tubes. This is not complete, and for when we have 3 tubes
+ * on the robot
+ */
 public class FiringSystem extends SubsystemBase {
 
   public final FiringTube[] tubes;

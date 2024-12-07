@@ -75,6 +75,10 @@ public class LED extends SubsystemBase {
 
   // Buffer Methods
 
+  // TODO put these buffer related methods in their own io layer, and have sim layer print out what
+  // is going on.
+  // would also be cool to have full LED sim, but that would be hard and take a lot of time.
+
   private void solid(Color color) {
     if (color != null) {
       for (int i = 0; i < length; i++) {

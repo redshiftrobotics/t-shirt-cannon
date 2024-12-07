@@ -32,8 +32,10 @@ public class Transducer {
    * @return pressure in psi reading from transducer
    */
   public double getTankPSI() {
-    // Per what Spencer said, the voltage will range from between .5 and 4.5 volts, and the pressure will range from 0 to 150 PSI.
-    // They are linearly related, so we can use the interpolate function to get the PSI from the voltage.
+    // Per what Spencer said, the voltage will range from between .5 and 4.5 volts, and the pressure
+    // will range from 0 to 150 PSI.
+    // They are linearly related, so we can use the interpolate function to get the PSI from the
+    // voltage.
     // double volts = input.getVoltage();
     double volts = input.getAverageVoltage();
     return MathUtil.interpolate(0, 150, MathUtil.inverseInterpolate(.5, 4.5, volts));

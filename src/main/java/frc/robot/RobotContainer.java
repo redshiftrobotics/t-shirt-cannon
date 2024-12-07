@@ -2,6 +2,7 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -20,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.Mode;
 import frc.robot.Constants.RobotType;
+import frc.robot.subsystems.cannon.CannonConstants;
 import frc.robot.subsystems.cannon.CannonIO;
 import frc.robot.subsystems.cannon.CannonIOHardware;
 import frc.robot.subsystems.cannon.CannonIOSim;
@@ -92,7 +94,9 @@ public class RobotContainer {
         vision = new AprilTagVision();
         reservoirTank = new ReservoirTank(new ReservoirIOHardware());
         gatewayTank = new GatewayTank(new GatewayIOHardware());
-        firingTube = new FiringTube(new CannonIOHardware(), "Main");
+        firingTube =
+            new FiringTube(
+                new CannonIOHardware(CannonConstants.MIDDLE_FIRING_TUBE_SOLENOID_CHANNEL), "Main");
         break;
 
       case SIM_BOT:
@@ -153,8 +157,8 @@ public class RobotContainer {
           }
         });
 
-    // TODO Set up reservoir tank
-    reservoirTank.setPressureThresholds(15, 20);
+    // Set up reservoir tank
+    reservoirTank.setPressureThresholds(20, 30);
     reservoirTank.addPauseFillingCondition(
         () ->
             NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.75
@@ -162,6 +166,16 @@ public class RobotContainer {
                     > drive.getMaxAngularSpeedRadPerSec() * 0.75,
         "Drive Speed High",
         0.3);
+    reservoirTank.setSimDrain(gatewayTank::isFilling);
+
+    // Set up gateway tank
+    gatewayTank.setDesiredPSI(20);
+    gatewayTank.addPauseFillingCondition(
+        () -> firingTube.isWaitingToFire() || firingTube.isOpen(), "Firing Tube Open", 0.5);
+    gatewayTank.setSimDrain(firingTube::isOpen);
+
+    // Set up firing tube
+    firingTube.setFireRequirements(() -> !gatewayTank.isFilling());
 
     // Alerts for constants to avoid using them in competition
     if (Constants.TUNING_MODE) {
@@ -203,17 +217,20 @@ public class RobotContainer {
     dashboard.setReservoirTank(
         reservoirTank::isFilling, reservoirTank::getPressure, reservoirTank::getStatusString);
 
-    dashboard.addCommand("Reset Pose", () -> drive.resetPose(new Pose2d()), true);
-    dashboard.addCommand("Zero Gyro", () -> drive.resetPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())), true);
+    dashboard.setGatewayTank(
+        gatewayTank::isFilling, gatewayTank::getPressure, gatewayTank::getStatusString);
 
-    // dashboard.addCommand("Swerve Offsets", new SwerveModuleOffsetReader(drive), true)
+    dashboard.setCannon(
+        gatewayTank::isPressureWithinTolerance,
+        gatewayTank::getTargetLaunchDistance,
+        gatewayTank::getEstimatedLaunchDistance);
 
-    // dashboard.addCommand(
-    //     "Pathfind To Speaker",
-    //     AutoBuilder.pathfindToPose(
-    //         new Pose2d(new Translation2d(1.377, 5.567), Rotation2d.fromDegrees(180)),
-    //         DriveConstants.PATH_CONSTRAINS),
-    //     false);
+    dashboard.addCommand("Reset Pose", drive.runOnce(() -> drive.resetPose(new Pose2d())), true);
+    dashboard.addCommand(
+        "Reset Rotation",
+        drive.runOnce(
+            () -> drive.resetPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))),
+        true);
   }
 
   /** Define button->command mappings. */
@@ -235,6 +252,7 @@ public class RobotContainer {
               new OverrideSwitch(driverXbox.rightBumper(), OverrideSwitch.Mode.HOLD, false));
 
       // Controllers
+
       final TeleopDriveController input =
           new TeleopDriveController(
               drive,
@@ -250,10 +268,6 @@ public class RobotContainer {
       DriverDashboard.getInstance().setSpeedLevelSupplier(speedController::getCurrentSpeedLevel);
       DriverDashboard.getInstance().setAngleDrivenSupplier(useAngleControlMode);
       DriverDashboard.getInstance().setFieldRelativeSupplier(useFieldRelative);
-
-      DriverDashboard.getInstance()
-          .addCommand("Reset Pose", () -> drive.resetPose(new Pose2d()), true);
-      DriverDashboard.getInstance().addCommand("Zero Gyro", drive::zeroGyro, true);
 
       // Default command
       drive.setDefaultCommand(
@@ -445,7 +459,25 @@ public class RobotContainer {
     if (operatorController instanceof CommandXboxController) {
       final CommandXboxController operatorXbox = (CommandXboxController) operatorController;
 
+      // TODO, this should be the other way around, pressing buttons should put command that pause
+      // the filling
+      // and in general more commands should be used to greatly simplify code.
+
       reservoirTank.addPauseFillingCondition(operatorXbox.y(), "Operator Y Button", 0);
+
+      gatewayTank.addPauseFillingCondition(operatorXbox.leftTrigger(), "Operator Prepare Fire", 0);
+
+      operatorXbox.rightTrigger().onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
+
+      gatewayTank.setDefaultCommand(
+          gatewayTank
+              .run(
+                  () -> {
+                    gatewayTank.setTargetLaunchDistance(
+                        gatewayTank.getTargetLaunchDistance()
+                            - MathUtil.applyDeadband(operatorXbox.getLeftY(), 0.1) * 0.4);
+                  })
+              .withName("GatewayTankSeDistance"));
     }
   }
 

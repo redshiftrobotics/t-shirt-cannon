@@ -2,15 +2,16 @@ package frc.robot.subsystems.cannon;
 
 public class CannonIOSim implements CannonIO {
 
-  boolean isOpen = false;
+  private boolean isOpen = false;
 
   @Override
   public void updateInputs(CannonIOInputs inputs) {
-    inputs.isOpen = false;
+    inputs.isOpen = isOpen;
   }
 
   @Override
   public void open() {
+    System.out.println("Whoosh!");
     isOpen = true;
   }
 
