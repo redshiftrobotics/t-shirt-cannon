@@ -1,6 +1,5 @@
 package frc.robot;
 
-import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -21,7 +20,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.Mode;
 import frc.robot.Constants.RobotType;
-import frc.robot.commands.SwerveModuleOffsetReader;
 import frc.robot.subsystems.cannon.CannonIO;
 import frc.robot.subsystems.cannon.CannonIOHardware;
 import frc.robot.subsystems.cannon.CannonIOSim;
@@ -41,10 +39,11 @@ import frc.robot.subsystems.gateway.GatewayIOHardware;
 import frc.robot.subsystems.gateway.GatewayIOSim;
 import frc.robot.subsystems.gateway.GatewayTank;
 import frc.robot.subsystems.reservoir.ReservoirIO;
-import frc.robot.subsystems.reservoir.ReservoirIODigital;
+import frc.robot.subsystems.reservoir.ReservoirIOHardware;
 import frc.robot.subsystems.reservoir.ReservoirIOSim;
 import frc.robot.subsystems.reservoir.ReservoirTank;
 import frc.robot.subsystems.vision.AprilTagVision;
+import frc.robot.utility.NormUtil;
 import frc.robot.utility.OverrideSwitch;
 import frc.robot.utility.logging.Alert;
 import frc.robot.utility.logging.Alert.AlertType;
@@ -91,7 +90,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         vision = new AprilTagVision();
-        reservoirTank = new ReservoirTank(new ReservoirIODigital());
+        reservoirTank = new ReservoirTank(new ReservoirIOHardware());
         gatewayTank = new GatewayTank(new GatewayIOHardware());
         firingTube = new FiringTube(new CannonIOHardware(), "Main");
         break;
@@ -121,7 +120,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         vision = new AprilTagVision();
-        reservoirTank = new ReservoirTank(new ReservoirIODigital() {});
+        reservoirTank = new ReservoirTank(new ReservoirIOHardware() {});
         gatewayTank = new GatewayTank(new GatewayIO() {});
         firingTube = new FiringTube(new CannonIO() {}, "Main");
         break;
@@ -142,6 +141,7 @@ public class RobotContainer {
         break;
     }
 
+    // Set up vision
     vision.setRobotPoseSupplier(drive::getPose);
     vision.addVisionEstimateConsumer(
         (visionEstimate) -> {
@@ -153,7 +153,15 @@ public class RobotContainer {
           }
         });
 
-    // reservoirTank.setDesiredPressureToFull();
+    // TODO Set up reservoir tank
+    reservoirTank.setPressureThresholds(15, 20);
+    reservoirTank.addPauseFillingCondition(
+        () ->
+            NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.75
+                || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
+                    > drive.getMaxAngularSpeedRadPerSec() * 0.75,
+        "Drive Speed High",
+        0.3);
 
     // Alerts for constants to avoid using them in competition
     if (Constants.TUNING_MODE) {
@@ -166,7 +174,6 @@ public class RobotContainer {
     }
 
     // Put dashboard defaults
-
     initDashboard();
 
     // Configure autos
@@ -180,7 +187,8 @@ public class RobotContainer {
     configureControllerBindings();
 
     // Print out robot and mode
-    System.out.printf("Robot %s, Mode: %s", Constants.getRobot(), Constants.getMode());
+    System.out.println(
+        String.format("Robot %s, Mode: %s", Constants.getRobot(), Constants.getMode()));
   }
 
   /** Configure drive dashboard object */
@@ -192,19 +200,20 @@ public class RobotContainer {
     dashboard.setFieldRelativeSupplier(() -> false);
     dashboard.setAngleDrivenSupplier(() -> false);
 
-    dashboard.setReservoirTank(reservoirTank::isFilling, reservoirTank::getPressure);
+    dashboard.setReservoirTank(
+        reservoirTank::isFilling, reservoirTank::getPressure, reservoirTank::getStatusString);
 
     dashboard.addCommand("Reset Pose", () -> drive.resetPose(new Pose2d()), true);
-    dashboard.addCommand("Zero Gyro", drive::zeroGyro, true);
+    dashboard.addCommand("Zero Gyro", () -> drive.resetPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())), true);
 
-    dashboard.addCommand("Swerve Offsets", new SwerveModuleOffsetReader(drive), true);
+    // dashboard.addCommand("Swerve Offsets", new SwerveModuleOffsetReader(drive), true)
 
-    dashboard.addCommand(
-        "Pathfind To Speaker",
-        AutoBuilder.pathfindToPose(
-            new Pose2d(new Translation2d(1.377, 5.567), Rotation2d.fromDegrees(180)),
-            DriveConstants.PATH_CONSTRAINS),
-        false);
+    // dashboard.addCommand(
+    //     "Pathfind To Speaker",
+    //     AutoBuilder.pathfindToPose(
+    //         new Pose2d(new Translation2d(1.377, 5.567), Rotation2d.fromDegrees(180)),
+    //         DriveConstants.PATH_CONSTRAINS),
+    //     false);
   }
 
   /** Define button->command mappings. */
@@ -393,7 +402,7 @@ public class RobotContainer {
       // (fast) mode
       driverXbox
           .rightTrigger(0.5)
-          .or(driverXbox.leftStick())
+          // .or(driverXbox.leftStick())
           .whileTrue(
               Commands.startEnd(
                   () -> speedController.pushSpeedLevel(SpeedLevel.BOOST),
@@ -403,7 +412,7 @@ public class RobotContainer {
       // (slow) mode
       driverXbox
           .leftTrigger(0.5)
-          .or(driverXbox.rightStick())
+          // .or(driverXbox.rightStick())
           .whileTrue(
               Commands.startEnd(
                   () -> speedController.pushSpeedLevel(SpeedLevel.PRECISE),
@@ -436,8 +445,7 @@ public class RobotContainer {
     if (operatorController instanceof CommandXboxController) {
       final CommandXboxController operatorXbox = (CommandXboxController) operatorController;
 
-      operatorXbox.a().onTrue(reservoirTank.runOnce(reservoirTank::forceEnableCompressor));
-      operatorXbox.b().onTrue(reservoirTank.runOnce(reservoirTank::forceDisableCompressor));
+      reservoirTank.addPauseFillingCondition(operatorXbox.y(), "Operator Y Button", 0);
     }
   }
 

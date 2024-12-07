@@ -3,7 +3,8 @@ package frc.robot.subsystems.gateway;
 public class GatewayConstants {
   private GatewayConstants() {}
 
-  public static final double FULL_TANK_PSI = 100;
-  public static final double PSI_TOLERANCE = 1;
-  public static final double AVERAGE_ATMOSPHERIC_PSI = 14.7;
+  public static final double MIN_ALLOWED_PRESSURE = 0;
+  public static final double MAX_ALLOWED_PRESSURE = 100;
+
+  public static final double PRESSURE_TOLERANCE = 5;
 }

@@ -5,13 +5,13 @@ import org.littletonrobotics.junction.AutoLog;
 public interface GatewayIO {
   @AutoLog
   public static class GatewayIOInputs {
-    double tankPSI;
-    boolean isFilling;
+    double tankPSI = 0;
+    boolean isFilling = false;
   }
 
   public default void updateInputs(GatewayIOInputs inputs) {}
 
   public default void beganFilling() {}
 
-  public default void stoppedFilling() {}
+  public default void stopFilling() {}
 }

@@ -1,21 +1,40 @@
 package frc.robot.subsystems.gateway;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.BangBangController;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.utility.ThresholdController;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
+/**
+ * Subsystem of t-shirt cannon robot representing the gateway tank and the value which fills it,
+ * along with the sensors on the gateway tank.
+ */
 public class GatewayTank extends SubsystemBase {
+
   private final GatewayIO io;
   private final GatewayIOInputsAutoLogged inputs = new GatewayIOInputsAutoLogged();
 
-  private final BangBangController controller;
+  private final ThresholdController controller;
 
-  /** Creates a new GatewayTank subsystem */
+  private final InterpolatingShotTable shotTable;
+
+  private final ArrayList<PauseCondition> pauseConditions;
+
+  /** Create a new GatewayTank subsystem */
   public GatewayTank(GatewayIO io) {
     this.io = io;
 
-    controller = new BangBangController(GatewayConstants.PSI_TOLERANCE);
+    pauseConditions = new ArrayList<>();
+
+    controller = new ThresholdController();
+
+    shotTable = new InterpolatingShotTable();
   }
 
   @Override
@@ -23,56 +42,108 @@ public class GatewayTank extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("GatewayTank", inputs);
 
-    double output = controller.calculate(inputs.tankPSI);
-
-    if (output > 0) {
+    if (controller.calculate(inputs.tankPSI) > 0
+        && !shouldPauseFilling()
+        && DriverStation.isEnabled()) {
       io.beganFilling();
     } else {
-      io.stoppedFilling();
+      io.stopFilling();
     }
+
+    Logger.recordOutput("GatewayTank/status", getStatusString());
   }
 
+  /**
+   * Get whether compressor is currently active and filling Gateway tank
+   *
+   * @return compressor state
+   */
   public boolean isFilling() {
     return inputs.isFilling;
   }
 
+  /**
+   * Get current pressure of gateway tank
+   *
+   * @return pressure in psi (pound per square inch)
+   */
   public double getPressure() {
     return inputs.tankPSI;
   }
 
   /**
-   * Sets the setpoint pressure that the compressor will try and bring the reservoir tank to. Units
-   * are PSI (or more accurately lbf/in^2).
-   *
-   * @param psi setpoint pressure in pound per square inch (PSI)
-   * @throws IllegalArgumentException if desired pressure is set to negative psi
+   * Get the estimated distance the t-shirt will travel based on the current pressure in the gateway
+   * 
+   * @return distance in meters
    */
-  public void setDesiredPressure(double psi) {
-    if (psi < 0) {
-      throw new IllegalArgumentException("Unable to set desired pressure to negative PSI");
-    }
-    if (psi > GatewayConstants.FULL_TANK_PSI) {
-      throw new IllegalArgumentException("Unable to set desired pressure to above max PSI");
-    }
-
-    controller.setSetpoint(psi);
+  public double getDistance() {
+    return shotTable.getEstimatedLaunchDistance(inputs.tankPSI);
   }
 
   /**
-   * Sets the pressure of the gateway tank to the correct pressure to launch t-shirt given distance.
-   *
-   * @param distance setpoint distance in meters
+   * Set the target distance the t-shirt will travel, changes target pressure of the gateway tank
+   * 
+   * @param distance in meters
    */
-  public void setDistanceToTarget(double distance) {
-    double psi = 0;
-    setDesiredPressure(MathUtil.clamp(psi, 0, GatewayConstants.FULL_TANK_PSI));
+  public void setDistance(double distance) {
+    setDesiredPSI(shotTable.getDesiredPSI(distance));
   }
 
-  public void forceEnableOpen() {
-    io.beganFilling();
+  /**
+   * Set the target pressure of the gateway tank
+   *
+   * @param psi target pressure in psi (pound per square inch)
+   */
+  public void setDesiredPSI(double psi) {
+    psi = MathUtil.clamp(psi, GatewayConstants.MIN_ALLOWED_PRESSURE, GatewayConstants.MAX_ALLOWED_PRESSURE);
+    controller.setThresholds(Math.max(psi - GatewayConstants.PRESSURE_TOLERANCE, GatewayConstants.MIN_ALLOWED_PRESSURE), psi);
   }
 
-  public void forceEnableClose() {
-    io.stoppedFilling();
+  /** Sets the setpoint pressure to none. The compressor will not activate. */
+  public void stopFilling() {
+    controller.setThresholds(0, 0);
+  }
+
+  public void addPauseFillingCondition(BooleanSupplier condition, String reason) {
+    pauseConditions.add(new PauseCondition(condition, reason));
+  }
+
+  public void addPauseFillingCondition(
+      BooleanSupplier condition, String reason, double debounceTimeSeconds) {
+    final Debouncer debouncer = new Debouncer(debounceTimeSeconds, DebounceType.kBoth);
+    pauseConditions.add(
+        new PauseCondition(() -> debouncer.calculate(condition.getAsBoolean()), reason));
+  }
+
+  public boolean shouldPauseFilling() {
+    return pauseConditions.stream().anyMatch(PauseCondition::isActive);
+  }
+
+  public Optional<String> getPauseReason() {
+    return pauseConditions.stream()
+        .filter(PauseCondition::isActive)
+        .map(PauseCondition::reason)
+        .findFirst();
+  }
+
+  public String getStatusString() {
+    if (isFilling()) {
+      return String.format(
+          "Filling to %.2f PSI for a distance of %.2f meters",
+          controller.getUpperThreshold());
+    } else if (!controller.isOn()) {
+      return String.format(
+          "Waiting to fill till pressure below %.2f PSI", controller.getLowerThreshold());
+    }
+    if (shouldPauseFilling()) {
+      return "Paused: " + getPauseReason().orElse("Unknown");
+    }
+    return "Idle";
+  }
+
+  public static record PauseCondition(BooleanSupplier condition, String reason) {
+    public boolean isActive() {
+      return condition.getAsBoolean();
+    }
   }
 }

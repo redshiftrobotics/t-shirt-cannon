@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
+import frc.robot.utility.NormUtil;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -34,6 +35,11 @@ public class DriverDashboard extends SubsystemBase {
 
   private BooleanSupplier reservoirTankFilling;
   private Supplier<Double> reservoirTankPressure;
+  private Supplier<String> reservoirTankStatus;
+
+  private BooleanSupplier gatewayTankFilling;
+  private Supplier<Double> gatewayTankPressure;
+  private Supplier<String> gatewayTankStatus;
 
   // --- Setters ---
 
@@ -74,9 +80,12 @@ public class DriverDashboard extends SubsystemBase {
   }
 
   public void setReservoirTank(
-      BooleanSupplier reservoirTankFilling, Supplier<Double> reservoirTankPressure) {
+      BooleanSupplier reservoirTankFilling,
+      Supplier<Double> reservoirTankPressure,
+      Supplier<String> reservoirTankStatus) {
     this.reservoirTankFilling = reservoirTankFilling;
     this.reservoirTankPressure = reservoirTankPressure;
+    this.reservoirTankStatus = reservoirTankStatus;
   }
 
   @Override
@@ -93,8 +102,7 @@ public class DriverDashboard extends SubsystemBase {
     if (speedsSupplier != null) {
       ChassisSpeeds speeds = speedsSupplier.get();
 
-      SmartDashboard.putNumber(
-          "Speed MPH", Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond) * 2.2369);
+      SmartDashboard.putNumber("Speed MPH", NormUtil.norm(speeds) * 2.2369);
     }
 
     if (speedLevelSupplier != null) {
@@ -121,6 +129,10 @@ public class DriverDashboard extends SubsystemBase {
 
     if (reservoirTankPressure != null) {
       SmartDashboard.putNumber("Reservoir Pressure", reservoirTankPressure.get());
+    }
+
+    if (reservoirTankStatus != null) {
+      SmartDashboard.putString("Reservoir Status", reservoirTankStatus.get());
     }
   }
 }

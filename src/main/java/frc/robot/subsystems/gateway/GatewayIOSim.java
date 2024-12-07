@@ -4,22 +4,26 @@ import frc.robot.Constants;
 
 public class GatewayIOSim implements GatewayIO {
 
-  private static final double PSI_CHANGE_PER_SECOND = 1.2;
+  private static final double COMPRESSOR_PSI_CHANGE_PER_SECOND = 5;
+  private static final double PASSIVE_PSI_LEAK_PER_SECOND = 0.02;
 
+  private double tankPSI;
   private boolean isFilling;
-  private double psi;
 
   public GatewayIOSim() {
+    tankPSI = 0;
     isFilling = false;
-    psi = GatewayConstants.AVERAGE_ATMOSPHERIC_PSI;
   }
 
   @Override
-  public void updateInputs(GatewayIOInputs input) {
-    input.isFilling = isFilling;
-    input.tankPSI = psi;
+  public void updateInputs(GatewayIOInputs inputs) {
+    inputs.tankPSI = tankPSI;
+    inputs.isFilling = isFilling;
 
-    psi += isFilling ? PSI_CHANGE_PER_SECOND * Constants.LOOP_PERIOD_SECONDS : 0;
+    if (inputs.isFilling) {
+      tankPSI += COMPRESSOR_PSI_CHANGE_PER_SECOND * Constants.LOOP_PERIOD_SECONDS;
+    }
+    tankPSI = Math.max(tankPSI - PASSIVE_PSI_LEAK_PER_SECOND * Constants.LOOP_PERIOD_SECONDS, 0);
   }
 
   @Override
@@ -28,7 +32,7 @@ public class GatewayIOSim implements GatewayIO {
   }
 
   @Override
-  public void stoppedFilling() {
+  public void stopFilling() {
     isFilling = false;
   }
 }

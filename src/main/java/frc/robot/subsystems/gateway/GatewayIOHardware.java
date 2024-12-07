@@ -21,13 +21,11 @@ public class GatewayIOHardware implements GatewayIO {
 
   @Override
   public void beganFilling() {
-    System.out.println("Gateway began filling");
     solenoid.set(true);
   }
 
   @Override
-  public void stoppedFilling() {
-    System.out.println("Gateway stopped filling");
+  public void stopFilling() {
     solenoid.set(false);
   }
 }

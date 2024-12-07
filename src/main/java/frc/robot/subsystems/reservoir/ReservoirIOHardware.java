@@ -3,33 +3,31 @@ package frc.robot.subsystems.reservoir;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.Relay.Direction;
 import edu.wpi.first.wpilibj.Relay.Value;
-import frc.robot.hardwareWrappers.CustomPneumaticHub;
+import frc.robot.hardwareWrappers.Transducer;
 
-public class ReservoirIODigital implements ReservoirIO {
+public class ReservoirIOHardware implements ReservoirIO {
 
-  private CustomPneumaticHub hub;
-  private Relay output;
+  private final Transducer pressureSensor;
+  private final Relay output;
 
-  public ReservoirIODigital() {
-    hub = new CustomPneumaticHub();
+  public ReservoirIOHardware() {
+    pressureSensor = new Transducer(0);
     output = new Relay(0, Direction.kBoth);
   }
 
   @Override
   public void updateInputs(ReservoirIOInputs inputs) {
-    inputs.tankPSI = hub.getPressure(1);
+    inputs.tankPSI = pressureSensor.getTankPSI();
     inputs.compressorRunning = output.get().equals(Value.kOn);
   }
 
   @Override
   public void startCompressor() {
-    System.out.println("Starting compressor");
     output.set(Value.kOn);
   }
 
   @Override
   public void stopCompressor() {
-    System.out.println("Stopping compressor");
     output.set(Value.kOff);
   }
 }

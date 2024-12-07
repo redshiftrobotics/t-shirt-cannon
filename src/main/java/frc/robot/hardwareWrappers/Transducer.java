@@ -21,14 +21,21 @@ public class Transducer {
    */
   public Transducer(int analogInChannel) {
     input = new AnalogInput(analogInChannel);
+
+    // Set the analog average bits to 2 to get a more stable reading
+    input.setAverageBits(2);
   }
 
   /**
-   * Get PSI reading from analog input voltage per what Spencer said
+   * Get pressure reading from analog input voltage
    *
-   * @return PSI reading from transducer
+   * @return pressure in psi reading from transducer
    */
   public double getTankPSI() {
-    return MathUtil.interpolate(0, 150, MathUtil.inverseInterpolate(.5, 4.5, input.getVoltage()));
+    // Per what Spencer said, the voltage will range from between .5 and 4.5 volts, and the pressure will range from 0 to 150 PSI.
+    // They are linearly related, so we can use the interpolate function to get the PSI from the voltage.
+    // double volts = input.getVoltage();
+    double volts = input.getAverageVoltage();
+    return MathUtil.interpolate(0, 150, MathUtil.inverseInterpolate(.5, 4.5, volts));
   }
 }

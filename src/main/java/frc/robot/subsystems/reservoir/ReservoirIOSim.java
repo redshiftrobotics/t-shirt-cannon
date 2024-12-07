@@ -4,13 +4,14 @@ import frc.robot.Constants;
 
 public class ReservoirIOSim implements ReservoirIO {
 
-  private static final double PSI_CHANGE_PER_SECOND = 1.2;
+  private static final double COMPRESSOR_PSI_CHANGE_PER_SECOND = 1.25;
+  private static final double PASSIVE_PSI_LEAK_PER_SECOND = 0.02;
 
   private double tankPSI;
   private boolean compressorRunning;
 
   public ReservoirIOSim() {
-    tankPSI = ReservoirConstants.AVERAGE_ATMOSPHERIC_PSI;
+    tankPSI = 0;
     compressorRunning = false;
   }
 
@@ -19,7 +20,10 @@ public class ReservoirIOSim implements ReservoirIO {
     inputs.tankPSI = tankPSI;
     inputs.compressorRunning = compressorRunning;
 
-    tankPSI += inputs.compressorRunning ? PSI_CHANGE_PER_SECOND * Constants.LOOP_PERIOD_SECONDS : 0;
+    if (inputs.compressorRunning) {
+      tankPSI += COMPRESSOR_PSI_CHANGE_PER_SECOND * Constants.LOOP_PERIOD_SECONDS;
+    }
+    tankPSI = Math.max(tankPSI - PASSIVE_PSI_LEAK_PER_SECOND * Constants.LOOP_PERIOD_SECONDS, 0);
   }
 
   @Override
