@@ -4,6 +4,8 @@ import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
+import frc.robot.Constants.RobotType;
 import frc.robot.utility.ThresholdController;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -36,6 +38,10 @@ public class ReservoirTank extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("ReservoirTank", inputs);
+
+    if (Constants.getRobot() == RobotType.TEST_BOT) {
+      return;
+    }
 
     if (controller.calculate(inputs.tankPSI) > 0
         && !shouldPauseFilling()
@@ -163,5 +169,18 @@ public class ReservoirTank extends SubsystemBase {
     public boolean isActive() {
       return condition.getAsBoolean();
     }
+  }
+
+  
+  // --- Testing ---
+
+  public void forceOpen() {
+    System.out.println("Starting Compressor");
+    io.startCompressor();
+  }
+
+  public void forceClose() {
+    System.out.println("Stopping Compressor");
+    io.stopCompressor();
   }
 }

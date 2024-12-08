@@ -1,16 +1,14 @@
 package frc.robot.subsystems.gateway;
 
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.Solenoid;
-import frc.robot.hardwareWrappers.CustomPneumaticHub;
 
 public class GatewayIOHardware implements GatewayIO {
 
   private final Solenoid solenoid;
 
   public GatewayIOHardware() {
-    try (CustomPneumaticHub hub = new CustomPneumaticHub()) {
-      solenoid = hub.makeSolenoid(15);
-    }
+    solenoid = new Solenoid(PneumaticsModuleType.REVPH, 15);
   }
 
   @Override

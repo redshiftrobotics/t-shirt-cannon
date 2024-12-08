@@ -1,16 +1,14 @@
 package frc.robot.subsystems.cannon;
 
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.Solenoid;
-import frc.robot.hardwareWrappers.CustomPneumaticHub;
 
 public class CannonIOHardware implements CannonIO {
 
   private final Solenoid solenoid;
 
   public CannonIOHardware(int solenoidChannel) {
-    try (CustomPneumaticHub hub = new CustomPneumaticHub()) {
-      solenoid = hub.makeSolenoid(solenoidChannel);
-    }
+    solenoid = new Solenoid(PneumaticsModuleType.REVPH, solenoidChannel);
   }
 
   @Override

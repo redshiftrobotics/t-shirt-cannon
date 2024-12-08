@@ -96,7 +96,8 @@ public class RobotContainer {
         gatewayTank = new GatewayTank(new GatewayIOHardware());
         firingTube =
             new FiringTube(
-                new CannonIOHardware(CannonConstants.MIDDLE_FIRING_TUBE_SOLENOID_CHANNEL), "Main");
+                new CannonIOHardware(CannonConstants.MIDDLE_FIRING_TUBE_SOLENOID_CHANNEL),
+                "Main");
         break;
 
       case SIM_BOT:
@@ -124,8 +125,8 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         vision = new AprilTagVision();
-        reservoirTank = new ReservoirTank(new ReservoirIOHardware() {});
-        gatewayTank = new GatewayTank(new GatewayIO() {});
+        reservoirTank = new ReservoirTank(new ReservoirIO() {});
+        gatewayTank = new GatewayTank(new GatewayIOHardware());
         firingTube = new FiringTube(new CannonIO() {}, "Main");
         break;
 
@@ -460,8 +461,7 @@ public class RobotContainer {
       final CommandXboxController operatorXbox = (CommandXboxController) operatorController;
 
       // TODO, this should be the other way around, pressing buttons should put command that pause
-      // the filling
-      // and in general more commands should be used to greatly simplify code.
+      // the filling and in general more commands should be used to greatly simplify code.
 
       reservoirTank.addPauseFillingCondition(operatorXbox.y(), "Operator Y Button", 0);
 
