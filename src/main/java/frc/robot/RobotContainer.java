@@ -21,11 +21,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.Mode;
 import frc.robot.Constants.RobotType;
-import frc.robot.subsystems.cannon.CannonConstants;
-import frc.robot.subsystems.cannon.CannonIO;
-import frc.robot.subsystems.cannon.CannonIOHardware;
-import frc.robot.subsystems.cannon.CannonIOSim;
-import frc.robot.subsystems.cannon.FiringTube;
 import frc.robot.subsystems.dashboard.DriverDashboard;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
@@ -36,14 +31,20 @@ import frc.robot.subsystems.drive.controllers.HeadingController;
 import frc.robot.subsystems.drive.controllers.SpeedController;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
-import frc.robot.subsystems.gateway.GatewayIO;
-import frc.robot.subsystems.gateway.GatewayIOHardware;
-import frc.robot.subsystems.gateway.GatewayIOSim;
-import frc.robot.subsystems.gateway.GatewayTank;
-import frc.robot.subsystems.reservoir.ReservoirIO;
-import frc.robot.subsystems.reservoir.ReservoirIOHardware;
-import frc.robot.subsystems.reservoir.ReservoirIOSim;
-import frc.robot.subsystems.reservoir.ReservoirTank;
+import frc.robot.subsystems.pneumatics.cannon.CannonConstants;
+import frc.robot.subsystems.pneumatics.cannon.CannonIO;
+import frc.robot.subsystems.pneumatics.cannon.CannonIOHardware;
+import frc.robot.subsystems.pneumatics.cannon.CannonIOSim;
+import frc.robot.subsystems.pneumatics.cannon.FiringTube;
+import frc.robot.subsystems.pneumatics.gateway.GatewayIO;
+import frc.robot.subsystems.pneumatics.gateway.GatewayIOHardware;
+import frc.robot.subsystems.pneumatics.gateway.GatewayIOSim;
+import frc.robot.subsystems.pneumatics.gateway.GatewayTank;
+import frc.robot.subsystems.pneumatics.reservoir.MaintainPressure;
+import frc.robot.subsystems.pneumatics.reservoir.ReservoirIO;
+import frc.robot.subsystems.pneumatics.reservoir.ReservoirIOHardware;
+import frc.robot.subsystems.pneumatics.reservoir.ReservoirIOSim;
+import frc.robot.subsystems.pneumatics.reservoir.ReservoirTank;
 import frc.robot.subsystems.vision.AprilTagVision;
 import frc.robot.utility.NormUtil;
 import frc.robot.utility.OverrideSwitch;
@@ -96,8 +97,7 @@ public class RobotContainer {
         gatewayTank = new GatewayTank(new GatewayIOHardware());
         firingTube =
             new FiringTube(
-                new CannonIOHardware(CannonConstants.MIDDLE_FIRING_TUBE_SOLENOID_CHANNEL),
-                "Main");
+                new CannonIOHardware(CannonConstants.MIDDLE_FIRING_TUBE_SOLENOID_CHANNEL), "Main");
         break;
 
       case SIM_BOT:
@@ -159,20 +159,23 @@ public class RobotContainer {
         });
 
     // Set up reservoir tank
-    reservoirTank.setPressureThresholds(20, 30);
-    reservoirTank.addPauseFillingCondition(
-        () ->
-            NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.75
-                || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
-                    > drive.getMaxAngularSpeedRadPerSec() * 0.75,
-        "Drive Speed High",
-        0.3);
+
+    reservoirTank.setDefaultCommand(
+        new MaintainPressure(reservoirTank, 20, 30).withName("MaintainPressure"));
+
+    new Trigger(
+            () ->
+                NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.75
+                    || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
+                        > drive.getMaxAngularSpeedRadPerSec() * 0.75)
+        .debounce(0.3)
+        .whileTrue(Commands.idle(reservoirTank).withName("Pause: Drive High Speed"));
+
     reservoirTank.setSimDrain(gatewayTank::isFilling);
 
-    // Set up gateway tank
-    gatewayTank.setDesiredPSI(20);
-    gatewayTank.addPauseFillingCondition(
-        () -> firingTube.isWaitingToFire() || firingTube.isOpen(), "Firing Tube Open", 0.5);
+    new Trigger(() -> firingTube.isWaitingToFire() || firingTube.isOpen())
+        .debounce(0.5)
+        .whileTrue(Commands.idle(gatewayTank).withName("Pause: Firing Tube Open"));
     gatewayTank.setSimDrain(firingTube::isOpen);
 
     // Set up firing tube
@@ -215,11 +218,11 @@ public class RobotContainer {
     dashboard.setFieldRelativeSupplier(() -> false);
     dashboard.setAngleDrivenSupplier(() -> false);
 
-    dashboard.setReservoirTank(
-        reservoirTank::isFilling, reservoirTank::getPressure, reservoirTank::getStatusString);
+    dashboard.addSubsystem(reservoirTank);
+    dashboard.setReservoirTank(reservoirTank::isFilling, reservoirTank::getPressure);
 
-    dashboard.setGatewayTank(
-        gatewayTank::isFilling, gatewayTank::getPressure, gatewayTank::getStatusString);
+    dashboard.addSubsystem(gatewayTank);
+    dashboard.setGatewayTank(gatewayTank::isFilling, gatewayTank::getPressure);
 
     dashboard.setCannon(
         gatewayTank::isPressureWithinTolerance,
@@ -460,24 +463,13 @@ public class RobotContainer {
     if (operatorController instanceof CommandXboxController) {
       final CommandXboxController operatorXbox = (CommandXboxController) operatorController;
 
-      // TODO, this should be the other way around, pressing buttons should put command that pause
-      // the filling and in general more commands should be used to greatly simplify code.
+      operatorXbox.y().whileTrue(Commands.idle(reservoirTank).withName("Pause: Operator Y Button"));
 
-      reservoirTank.addPauseFillingCondition(operatorXbox.y(), "Operator Y Button", 0);
-
-      gatewayTank.addPauseFillingCondition(operatorXbox.leftTrigger(), "Operator Prepare Fire", 0);
+      operatorXbox
+          .leftTrigger()
+          .whileTrue(Commands.idle(gatewayTank).withName("Pause: Operator Prepare Fire"));
 
       operatorXbox.rightTrigger().onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
-
-      gatewayTank.setDefaultCommand(
-          gatewayTank
-              .run(
-                  () -> {
-                    gatewayTank.setTargetLaunchDistance(
-                        gatewayTank.getTargetLaunchDistance()
-                            - MathUtil.applyDeadband(operatorXbox.getLeftY(), 0.1) * 0.4);
-                  })
-              .withName("GatewayTankSeDistance"));
     }
   }
 

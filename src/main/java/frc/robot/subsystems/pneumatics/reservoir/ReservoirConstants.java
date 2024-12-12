@@ -1,4 +1,4 @@
-package frc.robot.subsystems.reservoir;
+package frc.robot.subsystems.pneumatics.reservoir;
 
 public class ReservoirConstants {
   private ReservoirConstants() {}

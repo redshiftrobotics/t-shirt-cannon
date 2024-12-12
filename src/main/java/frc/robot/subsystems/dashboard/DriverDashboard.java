@@ -35,11 +35,9 @@ public class DriverDashboard extends SubsystemBase {
 
   private BooleanSupplier reservoirTankFilling;
   private Supplier<Double> reservoirTankPressure;
-  private Supplier<String> reservoirTankStatus;
 
   private BooleanSupplier gatewayTankFilling;
   private Supplier<Double> gatewayTankPressure;
-  private Supplier<String> gatewayTankStatus;
 
   private BooleanSupplier readyToFireSupplier;
   private DoubleSupplier targetLaunchDistance;
@@ -51,7 +49,9 @@ public class DriverDashboard extends SubsystemBase {
     if (subsystem instanceof Drive) {
       SmartDashboard.putData("Drive Subsystem", subsystem);
     } else {
-      throw new IllegalArgumentException("Unknown subsystem can not be added to driver dashboard");
+      // throw new IllegalArgumentException("Unknown subsystem can not be added to driver
+      // dashboard");
+      SmartDashboard.putData(subsystem);
     }
   }
 
@@ -80,21 +80,15 @@ public class DriverDashboard extends SubsystemBase {
   }
 
   public void setReservoirTank(
-      BooleanSupplier reservoirTankFilling,
-      Supplier<Double> reservoirTankPressure,
-      Supplier<String> reservoirTankStatus) {
+      BooleanSupplier reservoirTankFilling, Supplier<Double> reservoirTankPressure) {
     this.reservoirTankFilling = reservoirTankFilling;
     this.reservoirTankPressure = reservoirTankPressure;
-    this.reservoirTankStatus = reservoirTankStatus;
   }
 
   public void setGatewayTank(
-      BooleanSupplier gatewayTankFilling,
-      Supplier<Double> gatewayTankPressure,
-      Supplier<String> gatewayTankStatus) {
+      BooleanSupplier gatewayTankFilling, Supplier<Double> gatewayTankPressure) {
     this.gatewayTankFilling = gatewayTankFilling;
     this.gatewayTankPressure = gatewayTankPressure;
-    this.gatewayTankStatus = gatewayTankStatus;
   }
 
   public void setCannon(
@@ -149,20 +143,12 @@ public class DriverDashboard extends SubsystemBase {
       SmartDashboard.putNumber("Reservoir Pressure", reservoirTankPressure.get());
     }
 
-    if (reservoirTankStatus != null) {
-      SmartDashboard.putString("Reservoir Status", reservoirTankStatus.get());
-    }
-
     if (gatewayTankFilling != null) {
       SmartDashboard.putBoolean("Gateway Filling", gatewayTankFilling.getAsBoolean());
     }
 
     if (gatewayTankPressure != null) {
       SmartDashboard.putNumber("Gateway Pressure", gatewayTankPressure.get());
-    }
-
-    if (gatewayTankStatus != null) {
-      SmartDashboard.putString("Gateway Status", gatewayTankStatus.get());
     }
 
     if (readyToFireSupplier != null) {

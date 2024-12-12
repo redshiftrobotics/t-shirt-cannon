@@ -1,4 +1,4 @@
-package frc.robot.subsystems.cannon;
+package frc.robot.subsystems.pneumatics.cannon;
 
 public class CannonIOSim implements CannonIO {
 

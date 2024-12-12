@@ -19,6 +19,11 @@ public class ThresholdController {
    */
   public ThresholdController(double lowerThreshold, double upperThreshold) {
     setThresholds(lowerThreshold, upperThreshold);
+    reset();
+  }
+
+  /** Resets the controller to the OFF state. */
+  public void reset() {
     isOn = false;
   }
 

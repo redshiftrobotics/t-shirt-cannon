@@ -1,6 +1,5 @@
-package frc.robot.subsystems.cannon;
+package frc.robot.subsystems.pneumatics.cannon;
 
-import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
@@ -72,18 +71,5 @@ public class FiringTube extends SubsystemBase {
    */
   public void setFireRequirements(BooleanSupplier fireRequirement) {
     this.fireRequirement = fireRequirement;
-  }
-
-  /**
-   * Adds a requirement for the firing tube to open. Supplier must return true for the firing tube
-   * to open.
-   *
-   * @param fireRequirement the requirement for the firing tube to open
-   * @param debounceTimeSeconds the time in seconds the fire requirement must be true before the
-   *     firing tube opens
-   */
-  public void setFireRequirements(BooleanSupplier fireRequirement, double debounceTimeSeconds) {
-    final Debouncer debouncer = new Debouncer(debounceTimeSeconds);
-    this.fireRequirement = () -> debouncer.calculate(fireRequirement.getAsBoolean());
   }
 }

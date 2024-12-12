@@ -1,4 +1,4 @@
-package frc.robot.subsystems.gateway;
+package frc.robot.subsystems.pneumatics.gateway;
 
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.Solenoid;
@@ -18,12 +18,12 @@ public class GatewayIOHardware implements GatewayIO {
   }
 
   @Override
-  public void beganFilling() {
+  public void openFillingValve() {
     solenoid.set(true);
   }
 
   @Override
-  public void stopFilling() {
+  public void closeFillingValve() {
     solenoid.set(false);
   }
 }
