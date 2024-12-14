@@ -20,14 +20,22 @@ public final class Constants {
 
   public static final boolean SHOW_SYS_ID_AUTOS = false;
 
-  private static RobotType robotType = RobotType.TEST_BOT;
+  private static RobotType robotType = RobotType.SIM_BOT;
 
   public static RobotType getRobot() {
     if (RobotBase.isReal() && robotType == RobotType.SIM_BOT) {
       new Alert(
-              "Invalid robot selected, using competition robot as default.", Alert.AlertType.ERROR)
+              "Invalid robot selected for real robot, using competition robot as default.",
+              Alert.AlertType.ERROR)
           .set(true);
       robotType = RobotType.CANNON_BOT;
+    }
+    if (RobotBase.isSimulation() && robotType != RobotType.SIM_BOT) {
+      new Alert(
+              "Invalid robot selected for simulation robot, using simulation robot as default.",
+              Alert.AlertType.ERROR)
+          .set(true);
+      robotType = RobotType.SIM_BOT;
     }
     return robotType;
   }

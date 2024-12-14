@@ -1,14 +1,10 @@
 package frc.robot.subsystems.reservoir;
 
-import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.RobotType;
 import frc.robot.utility.ThresholdController;
-import java.util.ArrayList;
-import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -23,13 +19,13 @@ public class ReservoirTank extends SubsystemBase {
 
   private final ThresholdController controller;
 
-  private final ArrayList<PauseCondition> pauseConditions;
+  private boolean paused;
 
   /** Create a new ReservoirTank subsystem */
   public ReservoirTank(ReservoirIO io) {
     this.io = io;
 
-    pauseConditions = new ArrayList<>();
+    paused = false;
 
     controller = new ThresholdController();
   }
@@ -43,15 +39,11 @@ public class ReservoirTank extends SubsystemBase {
       return;
     }
 
-    if (controller.calculate(inputs.tankPSI) > 0
-        && !shouldPauseFilling()
-        && DriverStation.isEnabled()) {
+    if (controller.calculate(inputs.tankPSI) > 0 && !paused && DriverStation.isEnabled()) {
       io.startCompressor();
     } else {
       io.stopCompressor();
     }
-
-    Logger.recordOutput("ReservoirTank/status", getStatusString());
   }
 
   // --- Getters ---
@@ -130,27 +122,17 @@ public class ReservoirTank extends SubsystemBase {
 
   // --- Pause Conditions ---
 
-  public void addPauseFillingCondition(BooleanSupplier condition, String reason) {
-    pauseConditions.add(new PauseCondition(condition, reason));
+  /** Pause the compressor */
+  public void pause() {
+    this.paused = true;
   }
 
-  public void addPauseFillingCondition(
-      BooleanSupplier condition, String reason, double debounceTimeSeconds) {
-    final Debouncer debouncer = new Debouncer(debounceTimeSeconds, DebounceType.kBoth);
-    pauseConditions.add(
-        new PauseCondition(() -> debouncer.calculate(condition.getAsBoolean()), reason));
+  /** Unpause the compressor */
+  public void unpause() {
+    this.paused = false;
   }
 
-  public boolean shouldPauseFilling() {
-    return pauseConditions.stream().anyMatch(PauseCondition::isActive);
-  }
-
-  public Optional<String> getPauseReason() {
-    return pauseConditions.stream()
-        .filter(PauseCondition::isActive)
-        .map(PauseCondition::reason)
-        .findFirst();
-  }
+  // --- Status String ---
 
   public String getStatusString() {
     if (isFilling()) {
@@ -159,19 +141,12 @@ public class ReservoirTank extends SubsystemBase {
       return String.format(
           "Stopped till %.2f PSI (Start threshold)", controller.getLowerThreshold());
     }
-    if (shouldPauseFilling()) {
-      return "Paused: " + getPauseReason().orElse("Unknown");
+    if (this.paused) {
+      return getCurrentCommand().getName();
     }
     return "Idle";
   }
 
-  public static record PauseCondition(BooleanSupplier condition, String reason) {
-    public boolean isActive() {
-      return condition.getAsBoolean();
-    }
-  }
-
-  
   // --- Testing ---
 
   public void forceOpen() {

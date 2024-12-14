@@ -3,6 +3,7 @@ package frc.robot;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -96,8 +97,7 @@ public class RobotContainer {
         gatewayTank = new GatewayTank(new GatewayIOHardware());
         firingTube =
             new FiringTube(
-                new CannonIOHardware(CannonConstants.MIDDLE_FIRING_TUBE_SOLENOID_CHANNEL),
-                "Main");
+                new CannonIOHardware(CannonConstants.MIDDLE_FIRING_TUBE_SOLENOID_CHANNEL), "Main");
         break;
 
       case SIM_BOT:
@@ -160,19 +160,28 @@ public class RobotContainer {
 
     // Set up reservoir tank
     reservoirTank.setPressureThresholds(20, 30);
-    reservoirTank.addPauseFillingCondition(
-        () ->
-            NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.75
-                || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
-                    > drive.getMaxAngularSpeedRadPerSec() * 0.75,
-        "Drive Speed High",
-        0.3);
+    new Trigger(
+            () ->
+                NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.75
+                    || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
+                        > drive.getMaxAngularSpeedRadPerSec() * 0.75)
+        .debounce(0.3, DebounceType.kBoth)
+        .whileTrue(
+            reservoirTank
+                .startEnd(reservoirTank::pause, reservoirTank::unpause)
+                .withName("Pause: Drive Speed"));
+
     reservoirTank.setSimDrain(gatewayTank::isFilling);
 
     // Set up gateway tank
     gatewayTank.setDesiredPSI(20);
-    gatewayTank.addPauseFillingCondition(
-        () -> firingTube.isWaitingToFire() || firingTube.isOpen(), "Firing Tube Open", 0.5);
+    new Trigger(firingTube::isOpen)
+        .or(firingTube::isWaitingToFire)
+        .debounce(0.5, DebounceType.kBoth)
+        .whileTrue(
+            gatewayTank
+                .startEnd(gatewayTank::pause, gatewayTank::unpause)
+                .withName("Pause: Firing Tube Open"));
     gatewayTank.setSimDrain(firingTube::isOpen);
 
     // Set up firing tube
@@ -463,9 +472,19 @@ public class RobotContainer {
       // TODO, this should be the other way around, pressing buttons should put command that pause
       // the filling and in general more commands should be used to greatly simplify code.
 
-      reservoirTank.addPauseFillingCondition(operatorXbox.y(), "Operator Y Button", 0);
+      operatorXbox
+          .y()
+          .whileTrue(
+              reservoirTank
+                  .startEnd(reservoirTank::pause, reservoirTank::unpause)
+                  .withName("Pause: Operator Y Button"));
 
-      gatewayTank.addPauseFillingCondition(operatorXbox.leftTrigger(), "Operator Prepare Fire", 0);
+      operatorXbox
+          .leftTrigger()
+          .whileTrue(
+              gatewayTank
+                  .startEnd(gatewayTank::pause, gatewayTank::unpause)
+                  .withName("Pause: Operator Prepare Fire"));
 
       operatorXbox.rightTrigger().onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
 
@@ -477,7 +496,7 @@ public class RobotContainer {
                         gatewayTank.getTargetLaunchDistance()
                             - MathUtil.applyDeadband(operatorXbox.getLeftY(), 0.1) * 0.4);
                   })
-              .withName("GatewayTankSeDistance"));
+              .withName("Adjust Target Distance"));
     }
   }
 

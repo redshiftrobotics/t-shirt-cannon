@@ -1,15 +1,11 @@
 package frc.robot.subsystems.gateway;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.RobotType;
 import frc.robot.utility.ThresholdController;
-import java.util.ArrayList;
-import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -26,7 +22,7 @@ public class GatewayTank extends SubsystemBase {
 
   private final InterpolatingShotTable shotTable;
 
-  private final ArrayList<PauseCondition> pauseConditions;
+  private boolean paused;
 
   private double targetShotDistance;
 
@@ -34,7 +30,7 @@ public class GatewayTank extends SubsystemBase {
   public GatewayTank(GatewayIO io) {
     this.io = io;
 
-    pauseConditions = new ArrayList<>();
+    paused = false;
 
     controller = new ThresholdController();
 
@@ -50,15 +46,11 @@ public class GatewayTank extends SubsystemBase {
       return;
     }
 
-    if (controller.calculate(inputs.tankPSI) > 0
-        && !shouldPauseFilling()
-        && DriverStation.isEnabled()) {
+    if (controller.calculate(inputs.tankPSI) > 0 && !paused && DriverStation.isEnabled()) {
       io.beganFilling();
     } else {
       io.stopFilling();
     }
-
-    Logger.recordOutput("GatewayTank/status", getStatusString());
   }
 
   // --- Getters ---
@@ -160,27 +152,17 @@ public class GatewayTank extends SubsystemBase {
 
   // --- Pause Conditions ---
 
-  public void addPauseFillingCondition(BooleanSupplier condition, String reason) {
-    pauseConditions.add(new PauseCondition(condition, reason));
+  /** Pause the compressor */
+  public void pause() {
+    this.paused = true;
   }
 
-  public void addPauseFillingCondition(
-      BooleanSupplier condition, String reason, double debounceTimeSeconds) {
-    final Debouncer debouncer = new Debouncer(debounceTimeSeconds, DebounceType.kBoth);
-    pauseConditions.add(
-        new PauseCondition(() -> debouncer.calculate(condition.getAsBoolean()), reason));
+  /** Unpause the compressor */
+  public void unpause() {
+    this.paused = false;
   }
 
-  public boolean shouldPauseFilling() {
-    return pauseConditions.stream().anyMatch(PauseCondition::isActive);
-  }
-
-  public Optional<String> getPauseReason() {
-    return pauseConditions.stream()
-        .filter(PauseCondition::isActive)
-        .map(PauseCondition::reason)
-        .findFirst();
-  }
+  // --- Status String ---
 
   public String getStatusString() {
     if (isFilling()) {
@@ -189,16 +171,10 @@ public class GatewayTank extends SubsystemBase {
       return String.format(
           "Stopped till %.2f PSI (Start threshold)", controller.getLowerThreshold());
     }
-    if (shouldPauseFilling()) {
-      return "Paused: " + getPauseReason().orElse("Unknown");
+    if (this.paused) {
+      return getCurrentCommand().getName();
     }
     return "Idle";
-  }
-
-  public static record PauseCondition(BooleanSupplier condition, String reason) {
-    public boolean isActive() {
-      return condition.getAsBoolean();
-    }
   }
 
   // --- Testing ---
