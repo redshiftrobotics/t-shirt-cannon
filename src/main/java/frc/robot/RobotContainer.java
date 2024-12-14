@@ -127,7 +127,7 @@ public class RobotContainer {
         vision = new AprilTagVision();
         reservoirTank = new ReservoirTank(new ReservoirIO() {});
         gatewayTank = new GatewayTank(new GatewayIOHardware());
-        firingTube = new FiringTube(new CannonIO() {}, "Main");
+        firingTube = new FiringTube(new CannonIOHardware(15), "Main");
         break;
 
       default:
@@ -159,7 +159,7 @@ public class RobotContainer {
         });
 
     // Set up reservoir tank
-    reservoirTank.setPressureThresholds(20, 30);
+    reservoirTank.setPressureThresholds(10, 15);
     new Trigger(
             () ->
                 NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.75
@@ -174,7 +174,7 @@ public class RobotContainer {
     reservoirTank.setSimDrain(gatewayTank::isFilling);
 
     // Set up gateway tank
-    gatewayTank.setDesiredPSI(20);
+    gatewayTank.setDesiredPSI(10);
     new Trigger(firingTube::isOpen)
         .or(firingTube::isWaitingToFire)
         .debounce(0.5, DebounceType.kBoth)

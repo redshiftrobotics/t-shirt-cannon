@@ -11,8 +11,8 @@ public class ReservoirIOHardware implements ReservoirIO {
   private final Relay output;
 
   public ReservoirIOHardware() {
-    pressureSensor = new Transducer(0);
     output = new Relay(0, Direction.kBoth);
+    pressureSensor = new Transducer(0);
   }
 
   @Override
