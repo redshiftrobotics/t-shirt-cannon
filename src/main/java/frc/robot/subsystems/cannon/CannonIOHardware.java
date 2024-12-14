@@ -2,6 +2,7 @@ package frc.robot.subsystems.cannon;
 
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class CannonIOHardware implements CannonIO {
 
@@ -18,11 +19,13 @@ public class CannonIOHardware implements CannonIO {
 
   @Override
   public void open() {
+    SmartDashboard.putBoolean("Cannon", false);
     solenoid.set(true);
   }
 
   @Override
   public void close() {
+    SmartDashboard.putBoolean("Cannon", false);
     solenoid.set(false);
   }
 }

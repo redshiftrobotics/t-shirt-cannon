@@ -2,7 +2,6 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -125,7 +124,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         vision = new AprilTagVision();
-        reservoirTank = new ReservoirTank(new ReservoirIO() {});
+        reservoirTank = new ReservoirTank(new ReservoirIOHardware());
         gatewayTank = new GatewayTank(new GatewayIOHardware());
         firingTube = new FiringTube(new CannonIOHardware(15), "Main");
         break;
@@ -159,7 +158,7 @@ public class RobotContainer {
         });
 
     // Set up reservoir tank
-    reservoirTank.setPressureThresholds(10, 15);
+    reservoirTank.setPressureThresholds(15, 20);
     new Trigger(
             () ->
                 NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.75
@@ -174,7 +173,7 @@ public class RobotContainer {
     reservoirTank.setSimDrain(gatewayTank::isFilling);
 
     // Set up gateway tank
-    gatewayTank.setDesiredPSI(10);
+    gatewayTank.setDesiredPSI(20);
     new Trigger(firingTube::isOpen)
         .or(firingTube::isWaitingToFire)
         .debounce(0.5, DebounceType.kBoth)
@@ -325,7 +324,8 @@ public class RobotContainer {
       boolean includeDiagonalPOV = true;
       for (int pov = 0; pov < 360; pov += includeDiagonalPOV ? 45 : 90) {
 
-        // POV angles are in Clock Wise degrees, needs to be flipped to get correct rotation2d
+        // POV angles are in Clock Wise degrees, needs to be flipped to get correct
+        // rotation2d
         final Rotation2d angle = Rotation2d.fromDegrees(-pov);
         final String name = String.format("%d\u00B0", pov);
 
@@ -401,7 +401,8 @@ public class RobotContainer {
                     .withName(String.format("DriveLockedHeading %s", name)));
       }
 
-      // While X is held down go into stop and go into the cross position to resistent movement,
+      // While X is held down go into stop and go into the cross position to resistent
+      // movement,
       // then once X button is let go put modules forward
       driverXbox
           .x()
@@ -410,7 +411,8 @@ public class RobotContainer {
                   .startEnd(drive::stopUsingBrakeArrangement, drive::stopUsingForwardArrangement)
                   .withName("StopWithX"));
 
-      // When be is pressed stop the drivetrain then idle it, cancelling all incoming commands.
+      // When be is pressed stop the drivetrain then idle it, cancelling all incoming
+      // commands.
       // Also do this when robot is disabled
       driverXbox
           .b()
@@ -422,7 +424,8 @@ public class RobotContainer {
                   .withInterruptBehavior(InterruptionBehavior.kCancelIncoming)
                   .withName("StopCancel"));
 
-      // When right (Gas) trigger is held down or left stick (sprint) is pressed, put in boost
+      // When right (Gas) trigger is held down or left stick (sprint) is pressed, put
+      // in boost
       // (fast) mode
       driverXbox
           .rightTrigger(0.5)
@@ -432,7 +435,8 @@ public class RobotContainer {
                   () -> speedController.pushSpeedLevel(SpeedLevel.BOOST),
                   () -> speedController.removeSpeedLevel(SpeedLevel.BOOST)));
 
-      // When left (Brake) trigger is held down or right stick (crouch) is pressed put in precise
+      // When left (Brake) trigger is held down or right stick (crouch) is pressed put
+      // in precise
       // (slow) mode
       driverXbox
           .leftTrigger(0.5)
@@ -469,8 +473,10 @@ public class RobotContainer {
     if (operatorController instanceof CommandXboxController) {
       final CommandXboxController operatorXbox = (CommandXboxController) operatorController;
 
-      // TODO, this should be the other way around, pressing buttons should put command that pause
-      // the filling and in general more commands should be used to greatly simplify code.
+      // TODO, this should be the other way around, pressing buttons should put
+      // command that pause
+      // the filling and in general more commands should be used to greatly simplify
+      // code.
 
       operatorXbox
           .y()
@@ -488,15 +494,15 @@ public class RobotContainer {
 
       operatorXbox.rightTrigger().onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
 
-      gatewayTank.setDefaultCommand(
-          gatewayTank
-              .run(
-                  () -> {
-                    gatewayTank.setTargetLaunchDistance(
-                        gatewayTank.getTargetLaunchDistance()
-                            - MathUtil.applyDeadband(operatorXbox.getLeftY(), 0.1) * 0.4);
-                  })
-              .withName("Adjust Target Distance"));
+      // gatewayTank.setDefaultCommand(
+      // gatewayTank
+      // .run(
+      // () -> {
+      // gatewayTank.setTargetLaunchDistance(
+      // gatewayTank.getTargetLaunchDistance()
+      // - MathUtil.applyDeadband(operatorXbox.getLeftY(), 0.1) * 0.4);
+      // })
+      // .withName("Adjust Target Distance"));
     }
   }
 

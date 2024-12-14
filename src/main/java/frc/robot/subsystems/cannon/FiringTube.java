@@ -23,6 +23,7 @@ public class FiringTube extends SubsystemBase {
     this.name = name;
     fireTimer = new Timer();
     fireRequirement = () -> true;
+    io.close();
   }
 
   public void periodic() {

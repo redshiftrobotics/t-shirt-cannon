@@ -2,8 +2,6 @@ package frc.robot.subsystems.reservoir;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants;
-import frc.robot.Constants.RobotType;
 import frc.robot.utility.ThresholdController;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
@@ -34,10 +32,6 @@ public class ReservoirTank extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("ReservoirTank", inputs);
-
-    if (Constants.getRobot() == RobotType.TEST_BOT) {
-      return;
-    }
 
     if (controller.calculate(inputs.tankPSI) > 0 && !paused && DriverStation.isEnabled()) {
       io.startCompressor();
