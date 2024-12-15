@@ -157,34 +157,9 @@ public class RobotContainer {
           }
         });
 
-    // Set up reservoir tank
-    reservoirTank.setPressureThresholds(15, 20);
-    new Trigger(
-            () ->
-                NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.75
-                    || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
-                        > drive.getMaxAngularSpeedRadPerSec() * 0.75)
-        .debounce(0.3, DebounceType.kBoth)
-        .whileTrue(
-            reservoirTank
-                .startEnd(reservoirTank::pause, reservoirTank::unpause)
-                .withName("Pause: Drive Speed"));
-
+    // Pneumatics sim
     reservoirTank.setSimDrain(gatewayTank::isFilling);
-
-    // Set up gateway tank
-    gatewayTank.setDesiredPSI(20);
-    new Trigger(firingTube::isOpen)
-        .or(firingTube::isWaitingToFire)
-        .debounce(0.5, DebounceType.kBoth)
-        .whileTrue(
-            gatewayTank
-                .startEnd(gatewayTank::pause, gatewayTank::unpause)
-                .withName("Pause: Firing Tube Open"));
     gatewayTank.setSimDrain(firingTube::isOpen);
-
-    // Set up firing tube
-    firingTube.setFireRequirements(() -> !gatewayTank.isFilling());
 
     // Alerts for constants to avoid using them in competition
     if (Constants.TUNING_MODE) {
@@ -324,11 +299,13 @@ public class RobotContainer {
       boolean includeDiagonalPOV = true;
       for (int pov = 0; pov < 360; pov += includeDiagonalPOV ? 45 : 90) {
 
-        // POV angles are in Clock Wise degrees, needs to be flipped to get correct rotation2d
+        // POV angles are in Clock Wise degrees, needs to be flipped to get correct
+        // rotation2d
         final Rotation2d angle = Rotation2d.fromDegrees(-pov);
         final String name = String.format("%d\u00B0", pov);
 
-        // While the POV is being pressed and we are not in angle control mode, set the chassis
+        // While the POV is being pressed and we are not in angle control mode, set the
+        // chassis
         // speeds to the Cos and Sin of the angle
         driverXbox
             .pov(pov)
@@ -343,7 +320,8 @@ public class RobotContainer {
                         drive::stop)
                     .withName(String.format("DriveRobotRelative %s", name)));
 
-        // While the POV is being pressed and we are angle control mode. Start by resetting the
+        // While the POV is being pressed and we are angle control mode. Start by
+        // resetting the
         // controller and setting the goal angle to the pov angle
         driverXbox
             .pov(pov)
@@ -357,7 +335,8 @@ public class RobotContainer {
                         })
                     .withName(String.format("PrepareLockedHeading %s", name)));
 
-        // Then if the button is held for more than 0.2 seconds, drive forward at the angle once the
+        // Then if the button is held for more than 0.2 seconds, drive forward at the
+        // angle once the
         // chassis reaches it
         driverXbox
             .pov(pov)
@@ -377,7 +356,8 @@ public class RobotContainer {
                         })
                     .withName(String.format("ForwardLockedHeading %s", name)));
 
-        // Then once the pov is let go, if we are not at the angle continue turn to it, while also
+        // Then once the pov is let go, if we are not at the angle continue turn to it,
+        // while also
         // accepting x and y input to drive. Cancel once we get turn request
         driverXbox
             .pov(pov)
@@ -400,7 +380,8 @@ public class RobotContainer {
                     .withName(String.format("DriveLockedHeading %s", name)));
       }
 
-      // While X is held down go into stop and go into the cross position to resistent movement,
+      // While X is held down go into stop and go into the cross position to resistent
+      // movement,
       // then once X button is let go put modules forward
       driverXbox
           .x()
@@ -409,7 +390,8 @@ public class RobotContainer {
                   .startEnd(drive::stopUsingBrakeArrangement, drive::stopUsingForwardArrangement)
                   .withName("StopWithX"));
 
-      // When be is pressed stop the drivetrain then idle it, cancelling all incoming commands. Also
+      // When be is pressed stop the drivetrain then idle it, cancelling all incoming
+      // commands. Also
       // do this when robot is disabled
       driverXbox
           .b()
@@ -464,6 +446,25 @@ public class RobotContainer {
     if (operatorController instanceof CommandXboxController) {
       final CommandXboxController operatorXbox = (CommandXboxController) operatorController;
 
+      // TODO set up rest of control code in here. use default command to fill it 20, then have
+      // another command that idles it till it reaches 15
+      // Just display default command (fill to 20) and current command (pauses, etc) using subsystem 
+
+      // Set up reservoir tank
+
+      reservoirTank.setPressureThresholds(15, 20);
+      new Trigger(
+              () ->
+                  NormUtil.norm(drive.getRobotSpeeds())
+                          > drive.getMaxLinearSpeedMetersPerSec() * 0.75
+                      || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
+                          > drive.getMaxAngularSpeedRadPerSec() * 0.75)
+          .debounce(0.3, DebounceType.kBoth)
+          .whileTrue(
+              reservoirTank
+                  .startEnd(reservoirTank::pause, reservoirTank::unpause)
+                  .withName("Pause: Drive Speed"));
+
       operatorXbox
           .y()
           .whileTrue(
@@ -471,12 +472,26 @@ public class RobotContainer {
                   .startEnd(reservoirTank::pause, reservoirTank::unpause)
                   .withName("Pause: Operator Y Button"));
 
+      // Set up gateway tank
+      gatewayTank.setDesiredPSI(20);
+
+      new Trigger(firingTube::isOpen)
+          .or(firingTube::isWaitingToFire)
+          .debounce(0.1, DebounceType.kBoth)
+          .whileTrue(
+              gatewayTank
+                  .startEnd(gatewayTank::pause, gatewayTank::unpause)
+                  .withName("Pause: Firing Tube Open"));
+
       operatorXbox
           .leftTrigger()
           .whileTrue(
               gatewayTank
                   .startEnd(gatewayTank::pause, gatewayTank::unpause)
                   .withName("Pause: Operator Prepare Fire"));
+
+      // Set up firing tube
+      firingTube.setFireRequirements(() -> !gatewayTank.isFilling());
 
       operatorXbox.rightTrigger().onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
 

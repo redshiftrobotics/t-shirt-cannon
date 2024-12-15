@@ -60,7 +60,7 @@ public class FiringTube extends SubsystemBase {
     return waitingToFire;
   }
 
-  /** Opens the firing tube and starts the timer to close it. */
+  /** Queues opening the firing tube and starts the timer to close it. */
   public void fire() {
     waitingToFire = true;
   }
