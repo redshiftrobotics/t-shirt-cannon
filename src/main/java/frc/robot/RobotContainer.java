@@ -21,11 +21,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.Mode;
 import frc.robot.Constants.RobotType;
-import frc.robot.subsystems.cannon.CannonConstants;
-import frc.robot.subsystems.cannon.CannonIO;
-import frc.robot.subsystems.cannon.CannonIOHardware;
-import frc.robot.subsystems.cannon.CannonIOSim;
-import frc.robot.subsystems.cannon.FiringTube;
 import frc.robot.subsystems.dashboard.DriverDashboard;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
@@ -36,14 +31,19 @@ import frc.robot.subsystems.drive.controllers.HeadingController;
 import frc.robot.subsystems.drive.controllers.SpeedController;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
-import frc.robot.subsystems.gateway.GatewayIO;
-import frc.robot.subsystems.gateway.GatewayIOHardware;
-import frc.robot.subsystems.gateway.GatewayIOSim;
-import frc.robot.subsystems.gateway.GatewayTank;
-import frc.robot.subsystems.reservoir.ReservoirIO;
-import frc.robot.subsystems.reservoir.ReservoirIOHardware;
-import frc.robot.subsystems.reservoir.ReservoirIOSim;
-import frc.robot.subsystems.reservoir.ReservoirTank;
+import frc.robot.subsystems.pneumatics.cannon.CannonConstants;
+import frc.robot.subsystems.pneumatics.cannon.CannonIO;
+import frc.robot.subsystems.pneumatics.cannon.CannonIOHardware;
+import frc.robot.subsystems.pneumatics.cannon.CannonIOSim;
+import frc.robot.subsystems.pneumatics.cannon.FiringTube;
+import frc.robot.subsystems.pneumatics.gateway.GatewayIO;
+import frc.robot.subsystems.pneumatics.gateway.GatewayIOHardware;
+import frc.robot.subsystems.pneumatics.gateway.GatewayIOSim;
+import frc.robot.subsystems.pneumatics.gateway.GatewayTank;
+import frc.robot.subsystems.pneumatics.reservoir.ReservoirIO;
+import frc.robot.subsystems.pneumatics.reservoir.ReservoirIOHardware;
+import frc.robot.subsystems.pneumatics.reservoir.ReservoirIOSim;
+import frc.robot.subsystems.pneumatics.reservoir.ReservoirTank;
 import frc.robot.subsystems.vision.AprilTagVision;
 import frc.robot.utility.NormUtil;
 import frc.robot.utility.OverrideSwitch;
@@ -324,13 +324,12 @@ public class RobotContainer {
       boolean includeDiagonalPOV = true;
       for (int pov = 0; pov < 360; pov += includeDiagonalPOV ? 45 : 90) {
 
-        // POV angles are in Clock Wise degrees, needs to be flipped to get correct
-        // rotation2d
+        // POV angles are in Clock Wise degrees, needs to be flipped to get correct rotation2d
         final Rotation2d angle = Rotation2d.fromDegrees(-pov);
         final String name = String.format("%d\u00B0", pov);
 
-        // While the POV is being pressed and we are not in angle control mode, set the
-        // chassis speeds to the Cos and Sin of the angle
+        // While the POV is being pressed and we are not in angle control mode, set the chassis
+        // speeds to the Cos and Sin of the angle
         driverXbox
             .pov(pov)
             .and(useAngleControlMode)
@@ -344,8 +343,8 @@ public class RobotContainer {
                         drive::stop)
                     .withName(String.format("DriveRobotRelative %s", name)));
 
-        // While the POV is being pressed and we are angle control mode
-        // Start by resetting the controller and setting the goal angle to the pov angle
+        // While the POV is being pressed and we are angle control mode. Start by resetting the
+        // controller and setting the goal angle to the pov angle
         driverXbox
             .pov(pov)
             .and(useAngleControlMode.negate())
@@ -358,8 +357,8 @@ public class RobotContainer {
                         })
                     .withName(String.format("PrepareLockedHeading %s", name)));
 
-        // Then if the button is held for more than 0.2 seconds, drive forward at the
-        // angle once the chassis reaches it
+        // Then if the button is held for more than 0.2 seconds, drive forward at the angle once the
+        // chassis reaches it
         driverXbox
             .pov(pov)
             .debounce(0.2)
@@ -378,8 +377,8 @@ public class RobotContainer {
                         })
                     .withName(String.format("ForwardLockedHeading %s", name)));
 
-        // Then once the pov is let go, if we are not at the angle continue turn to it,
-        // while also accepting x and y input to drive. Cancel once we get turn request
+        // Then once the pov is let go, if we are not at the angle continue turn to it, while also
+        // accepting x and y input to drive. Cancel once we get turn request
         driverXbox
             .pov(pov)
             .and(useAngleControlMode.negate())
@@ -401,8 +400,7 @@ public class RobotContainer {
                     .withName(String.format("DriveLockedHeading %s", name)));
       }
 
-      // While X is held down go into stop and go into the cross position to resistent
-      // movement,
+      // While X is held down go into stop and go into the cross position to resistent movement,
       // then once X button is let go put modules forward
       driverXbox
           .x()
@@ -411,9 +409,8 @@ public class RobotContainer {
                   .startEnd(drive::stopUsingBrakeArrangement, drive::stopUsingForwardArrangement)
                   .withName("StopWithX"));
 
-      // When be is pressed stop the drivetrain then idle it, cancelling all incoming
-      // commands.
-      // Also do this when robot is disabled
+      // When be is pressed stop the drivetrain then idle it, cancelling all incoming commands. Also
+      // do this when robot is disabled
       driverXbox
           .b()
           .or(RobotModeTriggers.disabled())
@@ -424,23 +421,17 @@ public class RobotContainer {
                   .withInterruptBehavior(InterruptionBehavior.kCancelIncoming)
                   .withName("StopCancel"));
 
-      // When right (Gas) trigger is held down or left stick (sprint) is pressed, put
-      // in boost
-      // (fast) mode
+      // When right (Gas) trigger is held down put in boost (fast) mode
       driverXbox
           .rightTrigger(0.5)
-          // .or(driverXbox.leftStick())
           .whileTrue(
               Commands.startEnd(
                   () -> speedController.pushSpeedLevel(SpeedLevel.BOOST),
                   () -> speedController.removeSpeedLevel(SpeedLevel.BOOST)));
 
-      // When left (Brake) trigger is held down or right stick (crouch) is pressed put
-      // in precise
-      // (slow) mode
+      // When left (Brake) trigger is held down put in precise (slow) mode
       driverXbox
           .leftTrigger(0.5)
-          // .or(driverXbox.rightStick())
           .whileTrue(
               Commands.startEnd(
                   () -> speedController.pushSpeedLevel(SpeedLevel.PRECISE),
@@ -472,11 +463,6 @@ public class RobotContainer {
   private void configureOperatorControllerBindings() {
     if (operatorController instanceof CommandXboxController) {
       final CommandXboxController operatorXbox = (CommandXboxController) operatorController;
-
-      // TODO, this should be the other way around, pressing buttons should put
-      // command that pause
-      // the filling and in general more commands should be used to greatly simplify
-      // code.
 
       operatorXbox
           .y()

@@ -1,4 +1,4 @@
-package frc.robot.subsystems.gateway;
+package frc.robot.subsystems.pneumatics.gateway;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -159,6 +159,9 @@ public class GatewayTank extends SubsystemBase {
   // --- Status String ---
 
   public String getStatusString() {
+    if (DriverStation.isDisabled()) {
+      return "Pause: Disabled";
+    }
     if (isFilling()) {
       return String.format("Filling to %.2f PSI (End threshold)", controller.getUpperThreshold());
     } else if (!controller.isOn() && getPressure() > controller.getLowerThreshold()) {

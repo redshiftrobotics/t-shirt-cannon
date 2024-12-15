@@ -1,10 +1,10 @@
-package frc.robot.subsystems.reservoir;
+package frc.robot.subsystems.pneumatics.reservoir;
 
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.Relay.Direction;
 import edu.wpi.first.wpilibj.Relay.Value;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.hardwareWrappers.Transducer;
+import frc.robot.subsystems.pneumatics.hardwareWrappers.Transducer;
 
 public class ReservoirIOHardware implements ReservoirIO {
 

@@ -1,4 +1,4 @@
-package frc.robot.subsystems.reservoir;
+package frc.robot.subsystems.pneumatics.reservoir;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -129,6 +129,9 @@ public class ReservoirTank extends SubsystemBase {
   // --- Status String ---
 
   public String getStatusString() {
+    if (DriverStation.isDisabled()) {
+      return "Pause: Disabled";
+    }
     if (isFilling()) {
       return String.format("Filling to %.2f PSI (End threshold)", controller.getUpperThreshold());
     } else if (!controller.isOn() && getPressure() > controller.getLowerThreshold()) {

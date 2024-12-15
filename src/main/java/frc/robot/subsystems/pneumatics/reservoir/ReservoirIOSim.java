@@ -1,33 +1,34 @@
-package frc.robot.subsystems.gateway;
+package frc.robot.subsystems.pneumatics.reservoir;
 
 import frc.robot.Constants;
 import java.util.function.BooleanSupplier;
 
-public class GatewayIOSim implements GatewayIO {
+public class ReservoirIOSim implements ReservoirIO {
 
   // Completely made up values, just to simulate the system
-  private static final double FILLING_PSI_CHANGE_PER_SECOND = 5;
-  private static final double DRAIN_PSI_CHANGE_PER_SECOND = 20;
+  private static final double COMPRESSOR_PSI_CHANGE_PER_SECOND = 1.25;
+  private static final double DRAIN_PSI_CHANGE_PER_SECOND = 3;
   private static final double PASSIVE_PSI_LEAK_PER_SECOND = 0.02;
 
   private BooleanSupplier isDrainingSupplier;
 
   private double tankPSI;
-  private boolean isFilling;
+  private boolean compressorRunning;
 
-  public GatewayIOSim() {
+  public ReservoirIOSim() {
     tankPSI = 0;
-    isFilling = false;
+    compressorRunning = false;
+    isDrainingSupplier = () -> false;
   }
 
   @Override
-  public void updateInputs(GatewayIOInputs inputs) {
+  public void updateInputs(ReservoirIOInputs inputs) {
     inputs.tankPSI = tankPSI;
-    inputs.isFilling = isFilling;
+    inputs.compressorRunning = compressorRunning;
 
     double pressureChangePerSecond =
         0
-            + (isFilling ? FILLING_PSI_CHANGE_PER_SECOND : 0)
+            + (compressorRunning ? COMPRESSOR_PSI_CHANGE_PER_SECOND : 0)
             - (isDrainingSupplier.getAsBoolean() ? DRAIN_PSI_CHANGE_PER_SECOND : 0)
             - PASSIVE_PSI_LEAK_PER_SECOND;
 
@@ -35,13 +36,13 @@ public class GatewayIOSim implements GatewayIO {
   }
 
   @Override
-  public void beganFilling() {
-    isFilling = true;
+  public void startCompressor() {
+    compressorRunning = true;
   }
 
   @Override
-  public void stopFilling() {
-    isFilling = false;
+  public void stopCompressor() {
+    compressorRunning = false;
   }
 
   @Override

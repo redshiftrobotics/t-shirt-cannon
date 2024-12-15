@@ -5,11 +5,11 @@
       "autoPopulate": true,
       "autoPopulatePrefix": "SmartDashboard/",
       "widgetPane": {
-        "gridSize": 128.0,
+        "gridSize": 109.0,
         "showGrid": true,
         "hgap": 8.0,
         "vgap": 8.0,
-        "titleType": 0,
+        "titleType": 1,
         "tiles": {
           "1,0": {
             "size": [

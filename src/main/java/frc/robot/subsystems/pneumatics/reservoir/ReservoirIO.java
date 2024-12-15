@@ -1,4 +1,4 @@
-package frc.robot.subsystems.reservoir;
+package frc.robot.subsystems.pneumatics.reservoir;
 
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.AutoLog;

@@ -1,9 +1,9 @@
-package frc.robot.subsystems.gateway;
+package frc.robot.subsystems.pneumatics.gateway;
 
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.hardwareWrappers.Transducer;
+import frc.robot.subsystems.pneumatics.hardwareWrappers.Transducer;
 
 public class GatewayIOHardware implements GatewayIO {
 

@@ -1,4 +1,4 @@
-package frc.robot.subsystems.cannon;
+package frc.robot.subsystems.pneumatics.cannon;
 
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.Solenoid;
