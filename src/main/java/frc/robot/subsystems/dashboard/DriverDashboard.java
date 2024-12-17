@@ -42,8 +42,8 @@ public class DriverDashboard extends SubsystemBase {
   private Supplier<String> gatewayTankStatus;
 
   private BooleanSupplier readyToFireSupplier;
-  private DoubleSupplier targetLaunchDistance;
-  private DoubleSupplier estimatedLaunchDistance;
+  private DoubleSupplier targetPressure;
+  private BooleanSupplier cannonOpen;
 
   // --- Setters ---
 
@@ -99,11 +99,11 @@ public class DriverDashboard extends SubsystemBase {
 
   public void setCannon(
       BooleanSupplier readyToFireSupplier,
-      DoubleSupplier targetLaunchDistance,
-      DoubleSupplier estimatedLaunchDistance) {
+      DoubleSupplier targetPressure,
+      BooleanSupplier cannonOpen) {
     this.readyToFireSupplier = readyToFireSupplier;
-    this.targetLaunchDistance = targetLaunchDistance;
-    this.estimatedLaunchDistance = estimatedLaunchDistance;
+    this.targetPressure = targetPressure;
+    this.cannonOpen = cannonOpen;
   }
 
   @Override
@@ -169,12 +169,12 @@ public class DriverDashboard extends SubsystemBase {
       SmartDashboard.putBoolean("Fire Accurate", readyToFireSupplier.getAsBoolean());
     }
 
-    if (targetLaunchDistance != null) {
-      SmartDashboard.putNumber("Target Launch Distance", targetLaunchDistance.getAsDouble());
+    if (targetPressure != null) {
+      SmartDashboard.putNumber("Target Launch Pressure", targetPressure.getAsDouble());
     }
 
-    if (estimatedLaunchDistance != null) {
-      SmartDashboard.putNumber("Estimated Launch Distance", estimatedLaunchDistance.getAsDouble());
+    if (cannonOpen != null) {
+      SmartDashboard.putBoolean("Cannon Open", cannonOpen.getAsBoolean());
     }
   }
 }

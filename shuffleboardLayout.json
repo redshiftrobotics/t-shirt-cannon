@@ -152,7 +152,7 @@
               "_showGlyph": false
             }
           },
-          "6,0": {
+          "7,0": {
             "size": [
               1,
               1
@@ -169,7 +169,7 @@
           },
           "5,0": {
             "size": [
-              1,
+              2,
               1
             ],
             "content": {
@@ -188,7 +188,7 @@
           },
           "5,1": {
             "size": [
-              2,
+              3,
               1
             ],
             "content": {
@@ -199,7 +199,7 @@
               "_showGlyph": false
             }
           },
-          "9,0": {
+          "11,0": {
             "size": [
               1,
               1
@@ -214,9 +214,9 @@
               "Colors/Color when false": "#8B0000FF"
             }
           },
-          "8,0": {
+          "9,0": {
             "size": [
-              1,
+              2,
               1
             ],
             "content": {
@@ -233,9 +233,9 @@
               "Visuals/Orientation": "HORIZONTAL"
             }
           },
-          "8,1": {
+          "9,1": {
             "size": [
-              2,
+              3,
               1
             ],
             "content": {
@@ -259,25 +259,6 @@
               "_showGlyph": false
             }
           },
-          "6,3": {
-            "size": [
-              2,
-              1
-            ],
-            "content": {
-              "_type": "Number Bar",
-              "_source0": "network_table:///SmartDashboard/Target Launch Distance",
-              "_title": "Target Launch Distance",
-              "_glyph": 148,
-              "_showGlyph": false,
-              "Range/Min": 0.0,
-              "Range/Max": 100.0,
-              "Range/Center": 0.0,
-              "Visuals/Num tick marks": 5,
-              "Visuals/Show text": true,
-              "Visuals/Orientation": "HORIZONTAL"
-            }
-          },
           "5,3": {
             "size": [
               1,
@@ -293,23 +274,38 @@
               "Colors/Color when false": "#8B0000FF"
             }
           },
-          "8,3": {
+          "6,3": {
             "size": [
-              2,
+              4,
               1
             ],
             "content": {
               "_type": "Number Bar",
-              "_source0": "network_table:///SmartDashboard/Estimated Launch Distance",
-              "_title": "Estimated Launch Distance",
+              "_source0": "network_table:///SmartDashboard/Target Launch Pressure",
+              "_title": "Target Launch Pressure",
               "_glyph": 148,
               "_showGlyph": false,
-              "Range/Min": 0.0,
+              "Range/Min": -0.0,
               "Range/Max": 100.0,
               "Range/Center": 0.0,
               "Visuals/Num tick marks": 5,
               "Visuals/Show text": true,
               "Visuals/Orientation": "HORIZONTAL"
+            }
+          },
+          "10,3": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Boolean Box",
+              "_source0": "network_table:///SmartDashboard/Cannon Open",
+              "_title": "Cannon Open",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Colors/Color when true": "#7CFC00FF",
+              "Colors/Color when false": "#8B0000FF"
             }
           }
         }

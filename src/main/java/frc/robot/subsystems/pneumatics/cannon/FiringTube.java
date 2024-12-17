@@ -15,14 +15,13 @@ public class FiringTube extends SubsystemBase {
   private final Timer fireTimer;
   private boolean waitingToFire;
 
-  private BooleanSupplier fireRequirement;
+  private BooleanSupplier fireRequirement = () -> true;
 
   /** Creates a new FiringTube subsystem */
   public FiringTube(CannonIO io, String name) {
     this.io = io;
     this.name = name;
     fireTimer = new Timer();
-    fireRequirement = () -> true;
     io.close();
   }
 

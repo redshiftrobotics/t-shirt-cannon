@@ -78,14 +78,10 @@ public class DriveConstants {
 
       case CANNON_BOT:
       default:
-        FRONT_LEFT_MODULE_CONFIG =
-            new ModuleConfig(2, 3, 3, Rotation2d.fromRotations(0.631591796875), false);
-        FRONT_RIGHT_MODULE_CONFIG =
-            new ModuleConfig(14, 17, 4, Rotation2d.fromRotations(-0.77587890), false);
-        BACK_LEFT_MODULE_CONFIG =
-            new ModuleConfig(8, 9, 2, Rotation2d.fromRotations(-0.641357421875), false);
-        BACK_RIGHT_MODULE_CONFIG =
-            new ModuleConfig(10, 11, 1, Rotation2d.fromRotations(0.453857421), false);
+        FRONT_LEFT_MODULE_CONFIG = new ModuleConfig(0, 0, 0, new Rotation2d(), false);
+        FRONT_RIGHT_MODULE_CONFIG = new ModuleConfig(0, 0, 0, new Rotation2d(), false);
+        BACK_LEFT_MODULE_CONFIG = new ModuleConfig(0, 0, 0, new Rotation2d(), false);
+        BACK_RIGHT_MODULE_CONFIG = new ModuleConfig(0, 0, 0, new Rotation2d(), false);
         break;
     }
   }

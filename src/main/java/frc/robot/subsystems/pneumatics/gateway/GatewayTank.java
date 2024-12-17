@@ -21,6 +21,7 @@ public class GatewayTank extends SubsystemBase {
   private final InterpolatingShotTable shotTable;
 
   private boolean paused;
+  private boolean backfill;
 
   private double targetShotDistance;
 
@@ -29,6 +30,7 @@ public class GatewayTank extends SubsystemBase {
     this.io = io;
 
     paused = false;
+    backfill = false;
 
     controller = new ThresholdController();
 
@@ -40,7 +42,8 @@ public class GatewayTank extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("GatewayTank", inputs);
 
-    if (controller.calculate(inputs.tankPSI) > 0 && !paused && DriverStation.isEnabled()) {
+    if ((controller.calculate(inputs.tankPSI) > 0 && !paused && DriverStation.isEnabled())
+        || backfill) {
       io.beganFilling();
     } else {
       io.stopFilling();
@@ -95,6 +98,15 @@ public class GatewayTank extends SubsystemBase {
    */
   public double getTargetLaunchDistance() {
     return targetShotDistance;
+  }
+
+  /**
+   * Get target pressure of gateway tank
+   *
+   * @return pressure in psi (pound per square inch)
+   */
+  public double getTargetPressure() {
+    return controller.getUpperThreshold();
   }
 
   // --- Setters ---
@@ -156,6 +168,24 @@ public class GatewayTank extends SubsystemBase {
     this.paused = false;
   }
 
+  public boolean isPaused() {
+    return this.paused;
+  }
+
+  // --- Backfill Conditions ---
+
+  public void backfill() {
+    this.backfill = true;
+  }
+
+  public void stopBackfill() {
+    this.backfill = false;
+  }
+
+  public boolean isBackfilling() {
+    return this.backfill;
+  }
+
   // --- Status String ---
 
   public String getStatusString() {
@@ -163,6 +193,9 @@ public class GatewayTank extends SubsystemBase {
       return "Pause: Disabled";
     }
     if (isFilling()) {
+      if (isBackfilling()) {
+        return String.format("Backfilling. Currently at %.2f PSI", getPressure());
+      }
       return String.format("Filling to %.2f PSI (End threshold)", controller.getUpperThreshold());
     } else if (!controller.isOn() && getPressure() > controller.getLowerThreshold()) {
       return String.format(
