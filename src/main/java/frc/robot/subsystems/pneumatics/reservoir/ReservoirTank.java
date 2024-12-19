@@ -126,6 +126,10 @@ public class ReservoirTank extends SubsystemBase {
     this.paused = false;
   }
 
+  public boolean isPaused() {
+    return this.paused;
+  }
+
   // --- Status String ---
 
   public String getStatusString() {
@@ -138,7 +142,7 @@ public class ReservoirTank extends SubsystemBase {
       return String.format(
           "Stopped till %.2f PSI (Start threshold)", controller.getLowerThreshold());
     }
-    if (this.paused) {
+    if (isPaused()) {
       return getCurrentCommand().getName();
     }
     return "Idle";

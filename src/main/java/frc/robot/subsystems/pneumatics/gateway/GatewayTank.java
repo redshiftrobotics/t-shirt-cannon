@@ -201,7 +201,7 @@ public class GatewayTank extends SubsystemBase {
       return String.format(
           "Stopped till %.2f PSI (Start threshold)", controller.getLowerThreshold());
     }
-    if (this.paused) {
+    if (isPaused()) {
       return getCurrentCommand().getName();
     }
     return "Idle";
