@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
+import frc.robot.subsystems.pneumatics.tank.Tank;
 import frc.robot.utility.NormUtil;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
@@ -35,11 +36,9 @@ public class DriverDashboard extends SubsystemBase {
 
   private BooleanSupplier reservoirTankFilling;
   private Supplier<Double> reservoirTankPressure;
-  private Supplier<String> reservoirTankStatus;
 
   private BooleanSupplier gatewayTankFilling;
   private Supplier<Double> gatewayTankPressure;
-  private Supplier<String> gatewayTankStatus;
 
   private BooleanSupplier readyToFireSupplier;
   private DoubleSupplier targetPressure;
@@ -82,19 +81,19 @@ public class DriverDashboard extends SubsystemBase {
   public void setReservoirTank(
       BooleanSupplier reservoirTankFilling,
       Supplier<Double> reservoirTankPressure,
-      Supplier<String> reservoirTankStatus) {
+      Tank reservoirTank) {
     this.reservoirTankFilling = reservoirTankFilling;
     this.reservoirTankPressure = reservoirTankPressure;
-    this.reservoirTankStatus = reservoirTankStatus;
+    SmartDashboard.putData("Reservoir Tank", reservoirTank);
   }
 
   public void setGatewayTank(
       BooleanSupplier gatewayTankFilling,
       Supplier<Double> gatewayTankPressure,
-      Supplier<String> gatewayTankStatus) {
+      Tank gatewayTank) {
     this.gatewayTankFilling = gatewayTankFilling;
     this.gatewayTankPressure = gatewayTankPressure;
-    this.gatewayTankStatus = gatewayTankStatus;
+    SmartDashboard.putData("Gateway Tank", gatewayTank);
   }
 
   public void setCannon(
@@ -149,20 +148,12 @@ public class DriverDashboard extends SubsystemBase {
       SmartDashboard.putNumber("Reservoir Pressure", reservoirTankPressure.get());
     }
 
-    if (reservoirTankStatus != null) {
-      SmartDashboard.putString("Reservoir Status", reservoirTankStatus.get());
-    }
-
     if (gatewayTankFilling != null) {
       SmartDashboard.putBoolean("Gateway Filling", gatewayTankFilling.getAsBoolean());
     }
 
     if (gatewayTankPressure != null) {
       SmartDashboard.putNumber("Gateway Pressure", gatewayTankPressure.get());
-    }
-
-    if (gatewayTankStatus != null) {
-      SmartDashboard.putString("Gateway Status", gatewayTankStatus.get());
     }
 
     if (readyToFireSupplier != null) {

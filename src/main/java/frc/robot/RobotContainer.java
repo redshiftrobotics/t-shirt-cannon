@@ -2,7 +2,6 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -38,14 +37,11 @@ import frc.robot.subsystems.pneumatics.cannon.CannonIO;
 import frc.robot.subsystems.pneumatics.cannon.CannonIOHardware;
 import frc.robot.subsystems.pneumatics.cannon.CannonIOSim;
 import frc.robot.subsystems.pneumatics.cannon.FiringTube;
-import frc.robot.subsystems.pneumatics.gateway.GatewayIO;
-import frc.robot.subsystems.pneumatics.gateway.GatewayIOHardware;
-import frc.robot.subsystems.pneumatics.gateway.GatewayIOSim;
-import frc.robot.subsystems.pneumatics.gateway.GatewayTank;
-import frc.robot.subsystems.pneumatics.reservoir.ReservoirIO;
-import frc.robot.subsystems.pneumatics.reservoir.ReservoirIOHardware;
-import frc.robot.subsystems.pneumatics.reservoir.ReservoirIOSim;
-import frc.robot.subsystems.pneumatics.reservoir.ReservoirTank;
+import frc.robot.subsystems.pneumatics.tank.TankIOSolenoid;
+import frc.robot.subsystems.pneumatics.tank.TankIO;
+import frc.robot.subsystems.pneumatics.tank.TankIOCompressor;
+import frc.robot.subsystems.pneumatics.tank.TankIOSim;
+import frc.robot.subsystems.pneumatics.tank.Tank;
 import frc.robot.subsystems.vision.AprilTagVision;
 import frc.robot.utility.NormUtil;
 import frc.robot.utility.OverrideSwitch;
@@ -66,8 +62,8 @@ public class RobotContainer {
   private final Drive drive;
   private final AprilTagVision vision;
 
-  private final ReservoirTank reservoirTank;
-  private final GatewayTank gatewayTank;
+  private final Tank reservoirTank;
+  private final Tank gatewayTank;
   private final FiringTube firingTube;
 
   // Controller
@@ -94,8 +90,8 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.BACK_LEFT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_RIGHT_MODULE_CONFIG));
         vision = new AprilTagVision();
-        reservoirTank = new ReservoirTank(new ReservoirIOHardware());
-        gatewayTank = new GatewayTank(new GatewayIOHardware());
+        reservoirTank = new Tank(new TankIOCompressor());
+        gatewayTank = new Tank(new TankIOSolenoid());
         firingTube =
             new FiringTube(
                 new CannonIOHardware(CannonConstants.MIDDLE_FIRING_TUBE_SOLENOID_CHANNEL), "Main");
@@ -111,9 +107,9 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.BACK_LEFT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_RIGHT_MODULE_CONFIG));
         vision = new AprilTagVision();
-        reservoirTank = new ReservoirTank(new ReservoirIOSim());
-        gatewayTank = new GatewayTank(new GatewayIOSim());
         firingTube = new FiringTube(new CannonIOSim(), "Main");
+        gatewayTank = new Tank(new TankIOSim(() -> 6, () -> firingTube.isOpen() ? 5 : 0.1));
+        reservoirTank = new Tank(new TankIOSim(() -> 2, () -> gatewayTank.isFilling() ? 3 : 0.1));
         break;
 
       case TEST_BOT:
@@ -126,8 +122,8 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         vision = new AprilTagVision();
-        reservoirTank = new ReservoirTank(new ReservoirIOHardware());
-        gatewayTank = new GatewayTank(new GatewayIOHardware());
+        reservoirTank = new Tank(new TankIOCompressor());
+        gatewayTank = new Tank(new TankIOSolenoid());
         firingTube =
             new FiringTube(
                 new CannonIOHardware(CannonConstants.MIDDLE_FIRING_TUBE_SOLENOID_CHANNEL), "Main");
@@ -143,8 +139,8 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         vision = new AprilTagVision();
-        reservoirTank = new ReservoirTank(new ReservoirIO() {});
-        gatewayTank = new GatewayTank(new GatewayIO() {});
+        reservoirTank = new Tank(new TankIO() {});
+        gatewayTank = new Tank(new TankIO() {});
         firingTube = new FiringTube(new CannonIO() {}, "Main");
         break;
     }
@@ -160,10 +156,6 @@ public class RobotContainer {
                 visionEstimate.standardDeviations());
           }
         });
-
-    // Pneumatics sim
-    reservoirTank.setSimDrain(gatewayTank::isFilling);
-    gatewayTank.setSimDrain(firingTube::isOpen);
 
     // Alerts for constants to avoid using them in competition
     if (Constants.TUNING_MODE) {
@@ -203,13 +195,13 @@ public class RobotContainer {
     dashboard.setAngleDrivenSupplier(() -> false);
 
     dashboard.setReservoirTank(
-        reservoirTank::isFilling, reservoirTank::getPressure, reservoirTank::getStatusString);
+        reservoirTank::isFilling, reservoirTank::getPressure, reservoirTank);
 
     dashboard.setGatewayTank(
-        gatewayTank::isFilling, gatewayTank::getPressure, gatewayTank::getStatusString);
+        gatewayTank::isFilling, gatewayTank::getPressure, gatewayTank);
 
     dashboard.setCannon(
-        gatewayTank::isPressureWithinTolerance, gatewayTank::getTargetPressure, firingTube::isOpen);
+        () -> true, () -> 0, firingTube::isOpen);
 
     dashboard.addCommand("Reset Pose", drive.runOnce(() -> drive.resetPose(new Pose2d())), true);
     dashboard.addCommand(
@@ -454,7 +446,10 @@ public class RobotContainer {
 
       // Set up reservoir tank
 
-      reservoirTank.setPressureThresholds(30, 35);
+      reservoirTank.setDefaultCommand(
+        reservoirTank.fillToPressure(20).andThen(reservoirTank.pauseTillPressure(15))
+      );
+
       new Trigger(
               () ->
                   NormUtil.norm(drive.getRobotSpeeds())
@@ -462,69 +457,38 @@ public class RobotContainer {
                       || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
                           > drive.getMaxAngularSpeedRadPerSec() * 0.75)
           .debounce(0.3, DebounceType.kBoth)
-          .whileTrue(
-              reservoirTank
-                  .startEnd(reservoirTank::pause, reservoirTank::unpause)
-                  .withName("Pause: Drive Speed"));
-
+          .whileTrue(reservoirTank.pauseFill().withName("Pause: High Speed"));
+      
       operatorXbox
           .y()
           .whileTrue(
               reservoirTank
-                  .startEnd(reservoirTank::pause, reservoirTank::unpause)
+                  .pauseFill()
                   .withName("Pause: Operator Y Button"));
 
-      // Set up gateway tank
-      gatewayTank.setDesiredPSI(32);
+      gatewayTank.setDefaultCommand(
+        gatewayTank.fillToPressure(20).andThen(gatewayTank.pauseTillPressure(15))
+      );
 
       new Trigger(firingTube::isOpen)
           .or(firingTube::isWaitingToFire)
           .debounce(0.1, DebounceType.kBoth)
           .whileTrue(
               gatewayTank
-                  .startEnd(gatewayTank::pause, gatewayTank::unpause)
+                  .pauseFill()
                   .withName("Pause: Firing Tube Open"));
 
       operatorXbox
           .leftTrigger()
           .whileTrue(
               gatewayTank
-                  .startEnd(gatewayTank::pause, gatewayTank::pause)
+                  .pauseFill()
                   .withName("Pause: Operator Prepare Fire"));
 
-      operatorXbox
-          .a()
-          .and(firingTube::isOpen)
-          .whileTrue(
-              gatewayTank
-                  .startEnd(gatewayTank::backfill, gatewayTank::stopBackfill)
-                  .withName("Opened (Backfill): Operator A Button"));
-
       // Set up firing tube
-      firingTube.setFireRequirements(() -> !gatewayTank.isFilling() || gatewayTank.isBackfilling());
+      firingTube.setFireRequirements(() -> !gatewayTank.isFilling());
 
       operatorXbox.rightTrigger().onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
-
-      gatewayTank.setDefaultCommand(
-          gatewayTank
-              .run(
-                  () -> {
-                    gatewayTank.setDesiredPSI(
-                        gatewayTank.getTargetPressure()
-                            - MathUtil.applyDeadband(operatorXbox.getLeftY(), 0.1)
-                                * Constants.LOOP_PERIOD_SECONDS
-                                * 5);
-                  })
-              .withName("Adjust Target PSI"));
-      // gatewayTank.setDefaultCommand(
-      // gatewayTank
-      // .run(
-      // () -> {
-      // gatewayTank.setTargetLaunchDistance(
-      // gatewayTank.getTargetLaunchDistance()
-      // - MathUtil.applyDeadband(operatorXbox.getLeftY(), 0.1) * 0.4);
-      // })
-      // .withName("Adjust Target Distance"));
     }
   }
 

@@ -1,4 +1,4 @@
-package frc.robot.subsystems.pneumatics.gateway;
+package frc.robot.subsystems.pneumatics;
 
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 

@@ -1,36 +1,33 @@
-package frc.robot.subsystems.pneumatics.reservoir;
+package frc.robot.subsystems.pneumatics.tank;
 
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.Relay.Direction;
 import edu.wpi.first.wpilibj.Relay.Value;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.pneumatics.hardwareWrappers.Transducer;
 
-public class ReservoirIOHardware implements ReservoirIO {
+public class TankIOCompressor implements TankIO {
 
   private final Transducer pressureSensor;
   private final Relay output;
 
-  public ReservoirIOHardware() {
+  public TankIOCompressor() {
     output = new Relay(0, Direction.kBoth);
     pressureSensor = new Transducer(0);
   }
 
   @Override
-  public void updateInputs(ReservoirIOInputs inputs) {
+  public void updateInputs(TankIOInputs inputs) {
     inputs.tankPSI = pressureSensor.getTankPSI();
-    inputs.compressorRunning = output.get().equals(Value.kOn);
+    inputs.isFilling = output.get().equals(Value.kOn);
   }
 
   @Override
-  public void startCompressor() {
-    SmartDashboard.putBoolean("Reservoir", true);
+  public void enable() {
     output.set(Value.kOn);
   }
 
   @Override
-  public void stopCompressor() {
-    SmartDashboard.putBoolean("Reservoir", false);
+  public void disable() {
     output.set(Value.kOff);
   }
 }
