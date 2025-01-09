@@ -20,7 +20,7 @@ public final class Constants {
 
   public static final boolean SHOW_SYS_ID_AUTOS = false;
 
-  private static RobotType robotType = RobotType.SIM_BOT;
+  private static RobotType robotType = RobotType.CANNON_BOT;
 
   public static RobotType getRobot() {
     if (RobotBase.isReal() && robotType == RobotType.SIM_BOT) {
