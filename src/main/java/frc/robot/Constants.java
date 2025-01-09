@@ -1,7 +1,8 @@
 package frc.robot;
 
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.RobotBase;
-import frc.robot.utility.logging.Alert;
 
 /**
  * The Constants class provides a convenient place to hold robot-wide numerical or boolean
@@ -12,29 +13,28 @@ import frc.robot.utility.logging.Alert;
  * constants are needed, to reduce verbosity.
  */
 public final class Constants {
-  private Constants() {}
 
   public static final double LOOP_PERIOD_SECONDS = Robot.defaultPeriodSecs; // 0.02
 
   public static final boolean TUNING_MODE = false;
 
-  public static final boolean SHOW_SYS_ID_AUTOS = false;
+  private static RobotType robotType = RobotType.SIM_BOT;
 
-  private static RobotType robotType = RobotType.CANNON_BOT;
+  public static final Alert wrongRobotTypeAlertReal =
+      new Alert("Invalid robot selected, using cannon robot as default.", Alert.AlertType.kWarning);
+
+  private static final Alert wrongRobotTypeAlertSim =
+      new Alert(
+          "Invalid robot selected for simulation robot, using simulation robot as default.",
+          AlertType.kError);
 
   public static RobotType getRobot() {
     if (RobotBase.isReal() && robotType == RobotType.SIM_BOT) {
-      new Alert(
-              "Invalid robot selected for real robot, using competition robot as default.",
-              Alert.AlertType.ERROR)
-          .set(true);
+      wrongRobotTypeAlertReal.set(true);
       robotType = RobotType.CANNON_BOT;
     }
     if (RobotBase.isSimulation() && robotType != RobotType.SIM_BOT) {
-      new Alert(
-              "Invalid robot selected for simulation robot, using simulation robot as default.",
-              Alert.AlertType.ERROR)
-          .set(true);
+      wrongRobotTypeAlertSim.set(true);
       robotType = RobotType.SIM_BOT;
     }
     return robotType;

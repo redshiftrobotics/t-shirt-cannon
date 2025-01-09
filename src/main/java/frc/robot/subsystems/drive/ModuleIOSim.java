@@ -1,11 +1,9 @@
 package frc.robot.subsystems.drive;
 
-import static frc.robot.subsystems.drive.DriveConstants.MODULE_CONSTANTS;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import frc.robot.Constants;
@@ -20,13 +18,8 @@ import frc.robot.subsystems.drive.DriveConstants.ModuleConfig;
 public class ModuleIOSim implements ModuleIO {
 
   // --- Sim Hardware ---
-  private DCMotorSim driveSim =
-      new DCMotorSim(DCMotor.getNEO(1), MODULE_CONSTANTS.driveReduction(), 0.025);
-  private DCMotorSim turnSim =
-      new DCMotorSim(DCMotor.getNEO(1), MODULE_CONSTANTS.turnReduction(), 0.004);
-
-  // Absolute Encoder
-  private final Rotation2d turnAbsolutePositionInit;
+  private final DCMotorSim driveSim;
+  private final DCMotorSim turnSim;
 
   // Volts
   private double driveAppliedVolts = 0.0;
@@ -37,7 +30,16 @@ public class ModuleIOSim implements ModuleIO {
   private final PIDController turnFeedback;
 
   public ModuleIOSim(ModuleConfig config) {
-    turnAbsolutePositionInit = config.absoluteEncoderOffset();
+    driveSim =
+        new DCMotorSim(
+            LinearSystemId.createDCMotorSystem(
+                DriveConstants.driveMotor, 0.025, DriveConstants.driveReduction),
+            DriveConstants.driveMotor);
+    turnSim =
+        new DCMotorSim(
+            LinearSystemId.createDCMotorSystem(
+                DriveConstants.turnMotor, 0.004, DriveConstants.turnReduction),
+            DriveConstants.turnMotor);
 
     // Create PID
     driveFeedback = new PIDController(0.0, 0.0, 0.0, Constants.LOOP_PERIOD_SECONDS);
@@ -52,18 +54,22 @@ public class ModuleIOSim implements ModuleIO {
     turnSim.update(Constants.LOOP_PERIOD_SECONDS);
 
     // --- Drive ---
+    inputs.driveMotorConnected = true;
     inputs.drivePositionRad = driveSim.getAngularPositionRad();
     inputs.driveVelocityRadPerSec = driveSim.getAngularVelocityRadPerSec();
     inputs.driveAppliedVolts = driveAppliedVolts;
     inputs.driveSupplyCurrentAmps = Math.abs(driveSim.getCurrentDrawAmps());
 
     // --- Turn ---
-    inputs.turnAbsolutePosition =
-        new Rotation2d(turnSim.getAngularPositionRad()).plus(turnAbsolutePositionInit);
+    inputs.turnMotorConnected = true;
     inputs.turnPosition = new Rotation2d(turnSim.getAngularPositionRad());
     inputs.turnVelocityRadPerSec = turnSim.getAngularVelocityRadPerSec();
     inputs.turnAppliedVolts = turnAppliedVolts;
     inputs.turnSupplyCurrentAmps = Math.abs(turnSim.getCurrentDrawAmps());
+
+    // --- Absolute Encoder ---
+    inputs.turnAbsoluteEncoderConnected = true;
+    inputs.turnAbsolutePosition = inputs.turnPosition;
 
     // --- Odometry ---
     inputs.odometryTimestamps = new double[] {Timer.getFPGATimestamp()};

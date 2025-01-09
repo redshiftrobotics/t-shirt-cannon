@@ -1,29 +1,18 @@
 package frc.robot.subsystems.drive.controllers;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.utility.logging.LoggedTunableNumber;
-import frc.robot.utility.logging.LoggedTunableNumberGroup;
+import frc.robot.utility.JoystickUtil;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 
 /** Controller for converting joystick values to drive components */
 public class TeleopDriveController {
-
-  private static final LoggedTunableNumberGroup group =
-      new LoggedTunableNumberGroup("Drive/TeleopDriveController");
-
-  private static final LoggedTunableNumber stickDeadband = group.build("Deadband", 0.1);
-
-  private static final LoggedTunableNumber stickDirectionDeadband =
-      group.build("AngleDeadband", 0.5);
-
   private final Drive drive;
 
   private final DoubleSupplier xSupplier, ySupplier, xAngleSupplier, yAngleSupplier;
@@ -95,7 +84,9 @@ public class TeleopDriveController {
     Translation2d translation = new Translation2d(xInput, yInput);
 
     // get length of linear velocity vector, and apply deadband to it for noise reduction
-    double magnitude = MathUtil.applyDeadband(translation.getNorm(), stickDeadband.get());
+    double magnitude = JoystickUtil.applyDeadband(translation.getNorm());
+
+    if (magnitude <= Float.MIN_VALUE) return new Translation2d();
 
     // squaring the magnitude of the vector makes for quicker ramp up and slower fine control,
     // magnitude should always be positive
@@ -116,7 +107,7 @@ public class TeleopDriveController {
       double omegaInput, double maxAngularSpeedRadPerSec) {
 
     // get rotation speed, and apply deadband
-    double omega = MathUtil.applyDeadband(omegaInput, stickDeadband.get());
+    double omega = JoystickUtil.applyDeadband(omegaInput);
 
     // square the omega value for quicker ramp up and slower fine control
     // make sure to copy the sign over for direction
@@ -131,7 +122,7 @@ public class TeleopDriveController {
     final Translation2d desiredAngle = new Translation2d(xInput, yInput);
 
     // If the vector length is longer then our deadband update the heading controller
-    if (desiredAngle.getNorm() > stickDirectionDeadband.get()) {
+    if (desiredAngle.getNorm() > 0.5) {
       return Optional.of(desiredAngle.getAngle());
     }
 

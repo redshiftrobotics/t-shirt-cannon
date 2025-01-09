@@ -9,24 +9,10 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.utility.logging.LoggedTunableNumber;
-import frc.robot.utility.logging.LoggedTunableNumberGroup;
 import org.littletonrobotics.junction.Logger;
 
 /** Controller for rotating robot to goal heading using ProfiledPIDController */
 public class HeadingController {
-
-  // Tunable parameters
-  private static final LoggedTunableNumberGroup group =
-      new LoggedTunableNumberGroup("Drive/HeadingController");
-
-  private static final LoggedTunableNumber Kp =
-      group.build("kP", HEADING_CONTROLLER_CONSTANTS.Kp());
-  private static final LoggedTunableNumber Kd =
-      group.build("kD", HEADING_CONTROLLER_CONSTANTS.Kd());
-
-  private static final LoggedTunableNumber toleranceDegrees =
-      group.build("ToleranceDegrees", HEADING_CONTROLLER_CONSTANTS.toleranceDegrees());
 
   private final Drive drive;
 
@@ -42,14 +28,15 @@ public class HeadingController {
 
     headingControllerRadians =
         new ProfiledPIDController(
-            Kp.get(),
+            HEADING_CONTROLLER_CONSTANTS.Kp(),
             0,
-            Kd.get(),
+            HEADING_CONTROLLER_CONSTANTS.Kd(),
             new TrapezoidProfile.Constraints(
                 DRIVE_CONFIG.maxAngularVelocity(), DRIVE_CONFIG.maxAngularAcceleration()),
             Constants.LOOP_PERIOD_SECONDS);
     headingControllerRadians.enableContinuousInput(-Math.PI, Math.PI);
-    headingControllerRadians.setTolerance(Units.degreesToRadians(toleranceDegrees.get()));
+    headingControllerRadians.setTolerance(
+        Units.degreesToRadians(HEADING_CONTROLLER_CONSTANTS.toleranceDegrees()));
   }
 
   /** Reset last position and rotation to prepare for new use */
@@ -93,23 +80,6 @@ public class HeadingController {
    * @return rotation speed to reach heading goal, omega radians per second
    */
   public double calculate() {
-
-    // Update profiled PID controller
-    LoggedTunableNumber.ifChanged(
-        hashCode(),
-        () -> {
-          headingControllerRadians.setPID(Kp.get(), 0, Kd.get());
-        },
-        Kp,
-        Kd);
-
-    LoggedTunableNumber.ifChanged(
-        hashCode(),
-        () -> {
-          headingControllerRadians.setTolerance(Units.degreesToRadians(toleranceDegrees.get()));
-        },
-        toleranceDegrees);
-
     // Calculate output
     double measurement = drive.getPose().getRotation().getRadians();
     double output = headingControllerRadians.calculate(measurement);

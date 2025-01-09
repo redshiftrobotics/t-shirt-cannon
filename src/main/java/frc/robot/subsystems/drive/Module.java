@@ -1,15 +1,15 @@
 package frc.robot.subsystems.drive;
 
 import static frc.robot.subsystems.drive.DriveConstants.DRIVE_CONFIG;
-import static frc.robot.subsystems.drive.DriveConstants.MODULE_CONSTANTS;
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import frc.robot.utility.logging.LoggedTunableNumber;
-import frc.robot.utility.logging.LoggedTunableNumberGroup;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -18,32 +18,16 @@ import org.littletonrobotics.junction.Logger;
  */
 public class Module {
 
-  private static final LoggedTunableNumberGroup group =
-      new LoggedTunableNumberGroup("Drive/Module");
-
-  private static final LoggedTunableNumber driveFeedForwardKs =
-      group.build("DriveFfKs", MODULE_CONSTANTS.driveFeedforward().Ks());
-  private static final LoggedTunableNumber driveFeedForwardKv =
-      group.build("DriveFfKv", MODULE_CONSTANTS.driveFeedforward().Kv());
-  private static final LoggedTunableNumber driveFeedForwardKa =
-      group.build("DriveFfKa", MODULE_CONSTANTS.driveFeedforward().Ka());
-
-  private static final LoggedTunableNumber driveKp =
-      group.build("DriveKp", MODULE_CONSTANTS.driveFeedback().Kp());
-  private static final LoggedTunableNumber driveKd =
-      group.build("DriveKd", MODULE_CONSTANTS.driveFeedback().Kd());
-
-  private static final LoggedTunableNumber turnKp =
-      group.build("TurnKp", MODULE_CONSTANTS.turnFeedback().Kp());
-  private static final LoggedTunableNumber turnKd =
-      group.build("TurnKd", MODULE_CONSTANTS.turnFeedback().Kd());
-
   private final ModuleIO io;
   private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
   private final Translation2d distanceFromCenter;
 
   private SimpleMotorFeedforward driveFeedforward;
   private SwerveModuleState desiredState = new SwerveModuleState();
+
+  private final Alert driveDisconnectedAlert;
+  private final Alert turnDisconnectedAlert;
+  private final Alert turnAbsoluteEncoderDisconnectedAlert;
 
   /**
    * Create an individual swerve module in a drivetrain.
@@ -58,12 +42,26 @@ public class Module {
 
     driveFeedforward =
         new SimpleMotorFeedforward(
-            driveFeedForwardKs.get(), driveFeedForwardKv.get(), driveFeedForwardKa.get());
+            DriveConstants.driveFeedforward.Ks(),
+            DriveConstants.driveFeedforward.Kv(),
+            DriveConstants.driveFeedforward.Ka(),
+            Constants.LOOP_PERIOD_SECONDS);
 
-    io.setDrivePID(driveKp.get(), 0, driveKd.get());
-    io.setTurnPID(turnKp.get(), 0, turnKd.get());
+    io.setDrivePID(DriveConstants.driveFeedback.Kp(), 0, DriveConstants.driveFeedback.Kd());
+    io.setTurnPID(DriveConstants.turnFeedback.Kp(), 0, DriveConstants.turnFeedback.Kd());
 
     setBrakeMode(true);
+
+    driveDisconnectedAlert =
+        new Alert(
+            String.format("Disconnected drive motor on module %s.", toString()), AlertType.kError);
+    turnDisconnectedAlert =
+        new Alert(
+            String.format("Disconnected turn motor on module %s.", toString()), AlertType.kError);
+    turnAbsoluteEncoderDisconnectedAlert =
+        new Alert(
+            String.format("Disconnected absolute turn encoder on module %s.", toString()),
+            AlertType.kError);
   }
 
   /**
@@ -74,19 +72,10 @@ public class Module {
     Logger.processInputs("Drive/" + toString(), inputs);
     io.updateInputs(inputs);
 
-    int id = hashCode();
-
-    LoggedTunableNumber.ifChanged(
-        id,
-        () ->
-            driveFeedforward =
-                new SimpleMotorFeedforward(driveFeedForwardKs.get(), driveFeedForwardKv.get()),
-        driveFeedForwardKs,
-        driveFeedForwardKv);
-    LoggedTunableNumber.ifChanged(
-        id, () -> io.setDrivePID(driveKp.get(), 0, driveKd.get()), driveKp, driveKd);
-    LoggedTunableNumber.ifChanged(
-        id, () -> io.setTurnPID(turnKp.get(), 0, turnKd.get()), turnKp, turnKd);
+    // Update alerts
+    driveDisconnectedAlert.set(!inputs.driveMotorConnected);
+    turnDisconnectedAlert.set(!inputs.turnMotorConnected);
+    turnAbsoluteEncoderDisconnectedAlert.set(!inputs.turnAbsoluteEncoderConnected);
   }
 
   // --- Odometry ---
@@ -118,7 +107,9 @@ public class Module {
   public void setSpeeds(SwerveModuleState state) {
     // Optimize state based on current angle
     // Controllers run in "periodic" when the setpoint is not null
-    state = SwerveModuleState.optimize(state, getAngle());
+
+    state.optimize(getAngle());
+    state.cosineScale(getAngle());
 
     double velocityRadiansPerSecond = state.speedMetersPerSecond / DRIVE_CONFIG.wheelRadius();
     double angleRadians = state.angle.getRadians();

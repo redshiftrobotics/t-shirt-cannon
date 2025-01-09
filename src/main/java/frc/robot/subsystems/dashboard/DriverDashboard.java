@@ -34,15 +34,16 @@ public class DriverDashboard extends SubsystemBase {
   private BooleanSupplier angleDrivenSupplier;
 
   private BooleanSupplier reservoirTankFilling;
-  private Supplier<Double> reservoirTankPressure;
+  private DoubleSupplier reservoirTankPressure;
   private Supplier<String> reservoirTankStatus;
 
   private BooleanSupplier gatewayTankFilling;
-  private Supplier<Double> gatewayTankPressure;
+  private DoubleSupplier gatewayTankPressure;
   private Supplier<String> gatewayTankStatus;
 
   private BooleanSupplier readyToFireSupplier;
   private DoubleSupplier targetPressure;
+  private BooleanSupplier backfillMode;
   private BooleanSupplier cannonOpen;
 
   // --- Setters ---
@@ -81,7 +82,7 @@ public class DriverDashboard extends SubsystemBase {
 
   public void setReservoirTank(
       BooleanSupplier reservoirTankFilling,
-      Supplier<Double> reservoirTankPressure,
+      DoubleSupplier reservoirTankPressure,
       Supplier<String> reservoirTankStatus) {
     this.reservoirTankFilling = reservoirTankFilling;
     this.reservoirTankPressure = reservoirTankPressure;
@@ -90,7 +91,7 @@ public class DriverDashboard extends SubsystemBase {
 
   public void setGatewayTank(
       BooleanSupplier gatewayTankFilling,
-      Supplier<Double> gatewayTankPressure,
+      DoubleSupplier gatewayTankPressure,
       Supplier<String> gatewayTankStatus) {
     this.gatewayTankFilling = gatewayTankFilling;
     this.gatewayTankPressure = gatewayTankPressure;
@@ -100,9 +101,11 @@ public class DriverDashboard extends SubsystemBase {
   public void setCannon(
       BooleanSupplier readyToFireSupplier,
       DoubleSupplier targetPressure,
+      BooleanSupplier backfillMode,
       BooleanSupplier cannonOpen) {
     this.readyToFireSupplier = readyToFireSupplier;
     this.targetPressure = targetPressure;
+    this.backfillMode = backfillMode;
     this.cannonOpen = cannonOpen;
   }
 
@@ -146,7 +149,7 @@ public class DriverDashboard extends SubsystemBase {
     }
 
     if (reservoirTankPressure != null) {
-      SmartDashboard.putNumber("Reservoir Pressure", reservoirTankPressure.get());
+      SmartDashboard.putNumber("Reservoir Pressure", reservoirTankPressure.getAsDouble());
     }
 
     if (reservoirTankStatus != null) {
@@ -158,7 +161,7 @@ public class DriverDashboard extends SubsystemBase {
     }
 
     if (gatewayTankPressure != null) {
-      SmartDashboard.putNumber("Gateway Pressure", gatewayTankPressure.get());
+      SmartDashboard.putNumber("Gateway Pressure", gatewayTankPressure.getAsDouble());
     }
 
     if (gatewayTankStatus != null) {
@@ -171,6 +174,10 @@ public class DriverDashboard extends SubsystemBase {
 
     if (targetPressure != null) {
       SmartDashboard.putNumber("Target Launch Pressure", targetPressure.getAsDouble());
+    }
+
+    if (backfillMode != null) {
+      SmartDashboard.putBoolean("Backfill Mode", backfillMode.getAsBoolean());
     }
 
     if (cannonOpen != null) {

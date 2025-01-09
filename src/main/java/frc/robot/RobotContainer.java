@@ -2,14 +2,18 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -21,7 +25,6 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.Mode;
-import frc.robot.Constants.RobotType;
 import frc.robot.subsystems.dashboard.DriverDashboard;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
@@ -33,24 +36,12 @@ import frc.robot.subsystems.drive.controllers.HeadingController;
 import frc.robot.subsystems.drive.controllers.SpeedController;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
-import frc.robot.subsystems.pneumatics.cannon.CannonConstants;
-import frc.robot.subsystems.pneumatics.cannon.CannonIO;
-import frc.robot.subsystems.pneumatics.cannon.CannonIOHardware;
-import frc.robot.subsystems.pneumatics.cannon.CannonIOSim;
-import frc.robot.subsystems.pneumatics.cannon.FiringTube;
-import frc.robot.subsystems.pneumatics.gateway.GatewayIO;
-import frc.robot.subsystems.pneumatics.gateway.GatewayIOHardware;
-import frc.robot.subsystems.pneumatics.gateway.GatewayIOSim;
-import frc.robot.subsystems.pneumatics.gateway.GatewayTank;
-import frc.robot.subsystems.pneumatics.reservoir.ReservoirIO;
-import frc.robot.subsystems.pneumatics.reservoir.ReservoirIOHardware;
-import frc.robot.subsystems.pneumatics.reservoir.ReservoirIOSim;
-import frc.robot.subsystems.pneumatics.reservoir.ReservoirTank;
-import frc.robot.subsystems.vision.AprilTagVision;
+import frc.robot.subsystems.pneumatics.cannon.*;
+import frc.robot.subsystems.pneumatics.gateway.*;
+import frc.robot.subsystems.pneumatics.reservoir.*;
+import frc.robot.utility.JoystickUtil;
 import frc.robot.utility.NormUtil;
 import frc.robot.utility.OverrideSwitch;
-import frc.robot.utility.logging.Alert;
-import frc.robot.utility.logging.Alert.AlertType;
 import java.util.Optional;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -64,22 +55,22 @@ public class RobotContainer {
 
   // Subsystems
   private final Drive drive;
-  private final AprilTagVision vision;
-
-  private final ReservoirTank reservoirTank;
-  private final GatewayTank gatewayTank;
-  private final FiringTube firingTube;
 
   // Controller
   private final CommandGenericHID driverController = new CommandXboxController(0);
   private final CommandGenericHID operatorController = new CommandXboxController(1);
 
-  // Driver Information
-  private final DriverDashboard dashboard = DriverDashboard.getInstance();
+  private final ReservoirTank reservoirTank;
+  private final GatewayTank gatewayTank;
+  private final FiringTube firingTube;
 
-  // Auto
-  private final LoggedDashboardChooser<Command> autoChooser =
-      new LoggedDashboardChooser<>("Auto Chooser", new SendableChooser<Command>());
+  // Dashboard
+  private final DriverDashboard dashboard = DriverDashboard.getInstance();
+  private final LoggedDashboardChooser<Command> autoChooser;
+
+  // Alerts
+  private final Alert tuningModeActiveAlert =
+      new Alert("Tuning mode active, do not use in real event.", AlertType.kWarning);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -88,12 +79,11 @@ public class RobotContainer {
       case CANNON_BOT:
         drive =
             new Drive(
-                new GyroIOPigeon2(DriveConstants.GYRO_CAN_ID, false),
+                new GyroIOPigeon2(DriveConstants.GYRO_CAN_ID),
                 new ModuleIOSim(DriveConstants.FRONT_LEFT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.FRONT_RIGHT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_LEFT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_RIGHT_MODULE_CONFIG));
-        vision = new AprilTagVision();
         reservoirTank = new ReservoirTank(new ReservoirIOHardware());
         gatewayTank = new GatewayTank(new GatewayIOHardware());
         firingTube =
@@ -110,7 +100,6 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.FRONT_RIGHT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_LEFT_MODULE_CONFIG),
                 new ModuleIOSim(DriveConstants.BACK_RIGHT_MODULE_CONFIG));
-        vision = new AprilTagVision();
         reservoirTank = new ReservoirTank(new ReservoirIOSim());
         gatewayTank = new GatewayTank(new GatewayIOSim());
         firingTube = new FiringTube(new CannonIOSim(), "Main");
@@ -125,7 +114,6 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-        vision = new AprilTagVision();
         reservoirTank = new ReservoirTank(new ReservoirIOHardware());
         gatewayTank = new GatewayTank(new GatewayIOHardware());
         firingTube =
@@ -142,32 +130,30 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-        vision = new AprilTagVision();
         reservoirTank = new ReservoirTank(new ReservoirIO() {});
         gatewayTank = new GatewayTank(new GatewayIO() {});
         firingTube = new FiringTube(new CannonIO() {}, "Main");
         break;
     }
-
-    // Set up vision
-    vision.setRobotPoseSupplier(drive::getPose);
-    vision.addVisionEstimateConsumer(
-        (visionEstimate) -> {
-          if (visionEstimate.isSuccess() && Constants.getRobot() != RobotType.SIM_BOT) {
-            drive.addVisionMeasurement(
-                visionEstimate.robotPose2d(),
-                visionEstimate.timestampSeconds(),
-                visionEstimate.standardDeviations());
-          }
-        });
-
     // Pneumatics sim
     reservoirTank.setSimDrain(gatewayTank::isFilling);
     gatewayTank.setSimDrain(firingTube::isOpen);
 
+    // Can also use AutoBuilder.buildAutoChooser(); instead of SendableChooser to
+    // auto populate
+    autoChooser = new LoggedDashboardChooser<>("Auto Chooser", new SendableChooser<Command>());
+
+    // Configure autos
+    configureAutos();
+
+    // Configure sysids
+    if (Constants.TUNING_MODE) {
+      configureSysIds();
+    }
+
     // Alerts for constants to avoid using them in competition
     if (Constants.TUNING_MODE) {
-      new Alert("Tuning mode active, do not use in competition.", AlertType.INFO).set(true);
+      tuningModeActiveAlert.set(true);
     }
 
     // Hide controller missing warnings for sim
@@ -175,26 +161,16 @@ public class RobotContainer {
       DriverStation.silenceJoystickConnectionWarning(true);
     }
 
-    // Put dashboard defaults
     initDashboard();
-
-    // Configure autos
-    configureAutos();
-
-    if (Constants.SHOW_SYS_ID_AUTOS) {
-      configureSysIds();
-    }
 
     // Configure the button bindings
     configureControllerBindings();
-
-    // Print out robot and mode
-    System.out.println(
-        String.format("Robot %s, Mode: %s", Constants.getRobot(), Constants.getMode()));
   }
 
   /** Configure drive dashboard object */
   private void initDashboard() {
+    SmartDashboard.putData("Auto Chooser", autoChooser.getSendableChooser());
+
     dashboard.addSubsystem(drive);
     dashboard.setPoseSupplier(drive::getPose);
     dashboard.setRobotSpeedsSupplier(drive::getRobotSpeeds);
@@ -209,7 +185,10 @@ public class RobotContainer {
         gatewayTank::isFilling, gatewayTank::getPressure, gatewayTank::getStatusString);
 
     dashboard.setCannon(
-        gatewayTank::isPressureWithinTolerance, gatewayTank::getTargetPressure, firingTube::isOpen);
+        gatewayTank::isPressureWithinTolerance,
+        gatewayTank::getTargetPressure,
+        gatewayTank::isBackfilling,
+        firingTube::isOpen);
 
     dashboard.addCommand("Reset Pose", drive.runOnce(() -> drive.resetPose(new Pose2d())), true);
     dashboard.addCommand(
@@ -224,6 +203,7 @@ public class RobotContainer {
     CommandScheduler.getInstance().getActiveButtonLoop().clear();
     configureDriverControllerBindings();
     configureOperatorControllerBindings();
+    configureAlertTriggers();
   }
 
   private void configureDriverControllerBindings() {
@@ -238,7 +218,6 @@ public class RobotContainer {
               new OverrideSwitch(driverXbox.rightBumper(), OverrideSwitch.Mode.HOLD, false));
 
       // Controllers
-
       final TeleopDriveController input =
           new TeleopDriveController(
               drive,
@@ -301,14 +280,12 @@ public class RobotContainer {
       boolean includeDiagonalPOV = true;
       for (int pov = 0; pov < 360; pov += includeDiagonalPOV ? 45 : 90) {
 
-        // POV angles are in Clock Wise degrees, needs to be flipped to get correct
-        // rotation2d
+        // POV angles are in Clock Wise degrees, needs to be flipped to get correct rotation2d
         final Rotation2d angle = Rotation2d.fromDegrees(-pov);
         final String name = String.format("%d\u00B0", pov);
 
         // While the POV is being pressed and we are not in angle control mode, set the
-        // chassis
-        // speeds to the Cos and Sin of the angle
+        // chassis speeds to the Cos and Sin of the angle
         driverXbox
             .pov(pov)
             .and(useAngleControlMode)
@@ -322,9 +299,8 @@ public class RobotContainer {
                         drive::stop)
                     .withName(String.format("DriveRobotRelative %s", name)));
 
-        // While the POV is being pressed and we are angle control mode. Start by
-        // resetting the
-        // controller and setting the goal angle to the pov angle
+        // While the POV is being pressed and we are angle control mode
+        // Start by resetting the controller and setting the goal angle to the pov angle
         driverXbox
             .pov(pov)
             .and(useAngleControlMode.negate())
@@ -338,8 +314,7 @@ public class RobotContainer {
                     .withName(String.format("PrepareLockedHeading %s", name)));
 
         // Then if the button is held for more than 0.2 seconds, drive forward at the
-        // angle once the
-        // chassis reaches it
+        // angle once the chassis reaches it
         driverXbox
             .pov(pov)
             .debounce(0.2)
@@ -359,8 +334,7 @@ public class RobotContainer {
                     .withName(String.format("ForwardLockedHeading %s", name)));
 
         // Then once the pov is let go, if we are not at the angle continue turn to it,
-        // while also
-        // accepting x and y input to drive. Cancel once we get turn request
+        // while also accepting x and y input to drive. Cancel once we get turn request
         driverXbox
             .pov(pov)
             .and(useAngleControlMode.negate())
@@ -382,8 +356,7 @@ public class RobotContainer {
                     .withName(String.format("DriveLockedHeading %s", name)));
       }
 
-      // While X is held down go into stop and go into the cross position to resistent
-      // movement,
+      // While X is held down go into stop and go into the cross position to resistant movement,
       // then once X button is let go put modules forward
       driverXbox
           .x()
@@ -392,9 +365,8 @@ public class RobotContainer {
                   .startEnd(drive::stopUsingBrakeArrangement, drive::stopUsingForwardArrangement)
                   .withName("StopWithX"));
 
-      // When be is pressed stop the drivetrain then idle it, cancelling all incoming
-      // commands. Also
-      // do this when robot is disabled
+      // When be is pressed stop the drivetrain then idle it, cancelling all incoming commands.
+      // Also do this when robot is disabled
       driverXbox
           .b()
           .or(RobotModeTriggers.disabled())
@@ -405,7 +377,7 @@ public class RobotContainer {
                   .withInterruptBehavior(InterruptionBehavior.kCancelIncoming)
                   .withName("StopCancel"));
 
-      // When right (Gas) trigger is held down put in boost (fast) mode
+      // When right (accelerator/fire) trigger is pressed, put in boost (fast) mode
       driverXbox
           .rightTrigger(0.5)
           .whileTrue(
@@ -413,7 +385,7 @@ public class RobotContainer {
                   () -> speedController.pushSpeedLevel(SpeedLevel.BOOST),
                   () -> speedController.removeSpeedLevel(SpeedLevel.BOOST)));
 
-      // When left (Brake) trigger is held down put in precise (slow) mode
+      // When left (brake/ADS) trigger is is pressed put in precise (slow) mode
       driverXbox
           .leftTrigger(0.5)
           .whileTrue(
@@ -458,9 +430,9 @@ public class RobotContainer {
       new Trigger(
               () ->
                   NormUtil.norm(drive.getRobotSpeeds())
-                          > drive.getMaxLinearSpeedMetersPerSec() * 0.75
+                          > drive.getMaxLinearSpeedMetersPerSec() * 0.7
                       || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
-                          > drive.getMaxAngularSpeedRadPerSec() * 0.75)
+                          > drive.getMaxAngularSpeedRadPerSec() * 0.7)
           .debounce(0.3, DebounceType.kBoth)
           .whileTrue(
               reservoirTank
@@ -475,7 +447,7 @@ public class RobotContainer {
                   .withName("Pause: Operator Y Button"));
 
       // Set up gateway tank
-      gatewayTank.setDesiredPSI(32);
+      gatewayTank.setTargetPressure(32);
 
       new Trigger(firingTube::isOpen)
           .or(firingTube::isWaitingToFire)
@@ -484,6 +456,8 @@ public class RobotContainer {
               gatewayTank
                   .startEnd(gatewayTank::pause, gatewayTank::unpause)
                   .withName("Pause: Firing Tube Open"));
+
+      new Trigger(firingTube::isOpen).whileTrue(rumbleControllers(0.5));
 
       operatorXbox
           .leftTrigger()
@@ -494,24 +468,45 @@ public class RobotContainer {
 
       operatorXbox
           .a()
+          .or(operatorXbox.x())
           .and(firingTube::isOpen)
           .whileTrue(
               gatewayTank
                   .startEnd(gatewayTank::backfill, gatewayTank::stopBackfill)
-                  .withName("Opened (Backfill): Operator A Button"));
+                  .withName("Opened (Backfill): Operator A/X Button"));
 
       // Set up firing tube
       firingTube.setFireRequirements(() -> !gatewayTank.isFilling() || gatewayTank.isBackfilling());
 
       operatorXbox.rightTrigger().onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
 
+      operatorXbox
+          .povUp()
+          .onTrue(
+              gatewayTank
+                  .runOnce(
+                      () ->
+                          gatewayTank.setTargetPressure(
+                              Math.floor(gatewayTank.getTargetPressure() + 1)))
+                  .withName("Increase Target PSI"));
+
+      operatorXbox
+          .povDown()
+          .onTrue(
+              gatewayTank
+                  .runOnce(
+                      () ->
+                          gatewayTank.setTargetPressure(
+                              Math.ceil(gatewayTank.getTargetPressure() - 1)))
+                  .withName("Decrease Target PSI"));
+
       gatewayTank.setDefaultCommand(
           gatewayTank
               .run(
                   () -> {
-                    gatewayTank.setDesiredPSI(
+                    gatewayTank.setTargetPressure(
                         gatewayTank.getTargetPressure()
-                            - MathUtil.applyDeadband(operatorXbox.getLeftY(), 0.1)
+                            - JoystickUtil.applyDeadband(operatorXbox.getLeftY())
                                 * Constants.LOOP_PERIOD_SECONDS
                                 * 5);
                   })
@@ -528,8 +523,44 @@ public class RobotContainer {
     }
   }
 
-  public void configureSysIds() {
-    // Set up SysId routines
+  private Command rumbleControllers(double rumbleIntensity) {
+    return Commands.startEnd(
+            () -> {
+              driverController.setRumble(RumbleType.kBothRumble, rumbleIntensity);
+              operatorController.setRumble(RumbleType.kBothRumble, rumbleIntensity);
+            },
+            () -> {
+              driverController.setRumble(RumbleType.kBothRumble, 0);
+              operatorController.setRumble(RumbleType.kBothRumble, 0);
+            })
+        .withName("RumbleController");
+  }
+
+  private void configureAlertTriggers() {
+    // Endgame alert triggers
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= 20)
+        .onTrue(rumbleControllers(0.5).withTimeout(0.5));
+
+    RobotModeTriggers.teleop()
+        .and(RobotBase::isReal)
+        .onChange(rumbleControllers(0.2).withTimeout(0.2));
+  }
+
+  private void configureAutos() {
+    // Set up named commands for path planner auto
+    // https://pathplanner.dev/pplib-named-commands.html
+    NamedCommands.registerCommand("StopWithX", drive.runOnce(drive::stopUsingBrakeArrangement));
+    // Path planner Autos
+    // https://pathplanner.dev/gui-editing-paths-and-autos.html#autos
+    autoChooser.addOption("Triangle Auto", new PathPlannerAuto("Triangle Auto"));
+    autoChooser.addOption("Rotate Auto", new PathPlannerAuto("Rotate Auto"));
+  }
+
+  private void configureSysIds() {
     // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/system-identification/introduction.html
     autoChooser.addOption(
         "Drive SysId (Quasistatic Forward)",
@@ -541,17 +572,6 @@ public class RobotContainer {
         "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
-  }
-
-  public void configureAutos() {
-    // Set up named commands for path planner auto
-    // https://pathplanner.dev/pplib-named-commands.html
-    NamedCommands.registerCommand("StopWithX", drive.runOnce(drive::stopUsingBrakeArrangement));
-
-    // Path planner Autos
-    // https://pathplanner.dev/gui-editing-paths-and-autos.html#autos
-    autoChooser.addOption("Triangle Auto", new PathPlannerAuto("Triangle Auto"));
-    autoChooser.addOption("Rotate Auto", new PathPlannerAuto("Rotate Auto"));
   }
 
   /**

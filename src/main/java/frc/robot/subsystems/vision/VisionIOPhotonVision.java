@@ -13,10 +13,19 @@
 
 package frc.robot.subsystems.vision;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Transform3d;
 
-public class VisionConstants {
-  public static final AprilTagFieldLayout aprilTagLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+/** IO implementation for real PhotonVision hardware. */
+public class VisionIOPhotonVision implements VisionIO {
+  protected final Transform3d robotToCamera;
+
+  /**
+   * Creates a new VisionIOPhotonVision.
+   *
+   * @param name The configured name of the camera.
+   * @param rotationSupplier The 3D position of the camera relative to the robot.
+   */
+  public VisionIOPhotonVision(String name, Transform3d robotToCamera) {
+    this.robotToCamera = robotToCamera;
+  }
 }

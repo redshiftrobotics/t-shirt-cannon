@@ -4,13 +4,11 @@ import static frc.robot.subsystems.drive.DriveConstants.DRIVE_CONFIG;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathfindingCommand;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.pathfinding.Pathfinding;
-import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
-import com.pathplanner.lib.util.PIDConstants;
 import com.pathplanner.lib.util.PathPlannerLogging;
-import com.pathplanner.lib.util.ReplanningConfig;
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -18,21 +16,20 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics.SwerveDriveWheelStates;
-import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.units.Units;
+import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
+import frc.robot.Constants.Mode;
 import frc.robot.utility.AllianceFlipUtil;
 import frc.robot.utility.LocalADStarAK;
-import frc.robot.utility.logging.Alert;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -48,6 +45,9 @@ public class Drive extends SubsystemBase {
 
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
+  private final Alert gyroConnectionAlert =
+      new Alert("Disconnected gyro, using kinematics as fallback.", Alert.AlertType.kError);
+
   private final Module[] modules; // FL, FR, BL, BR
 
   @AutoLogOutput(key = "Drive/BrakeModeEnabled")
@@ -62,9 +62,6 @@ public class Drive extends SubsystemBase {
 
   private Rotation2d rawGyroRotation = new Rotation2d();
   private Pose2d pose = new Pose2d();
-
-  private final Alert gyroConnectionAlert =
-      new Alert("Gyro Disconnected! Using fallback.", Alert.AlertType.ERROR);
 
   /**
    * Creates a new drivetrain for robot
@@ -112,24 +109,19 @@ public class Drive extends SubsystemBase {
     // --- Start odometry threads ---
 
     // Start threads (does nothing if no signals have been created)
-    PhoenixOdometryThread.getInstance().start();
-    SparkMaxOdometryThread.getInstance().start();
+    SparkOdometryThread.getInstance().start();
 
     // --- PathPlanner ---
 
     // Configure AutoBuilder for PathPlanner
-    AutoBuilder.configureHolonomic(
+    AutoBuilder.configure(
         this::getPose,
         this::resetPose,
         this::getRobotSpeeds,
-        this::setRobotSpeeds,
-        new HolonomicPathFollowerConfig(
-            new PIDConstants(5),
-            new PIDConstants(5),
-            DRIVE_CONFIG.maxLinearVelocity(),
-            DRIVE_CONFIG.driveBaseRadius(),
-            new ReplanningConfig(true, false, 1.0, 0.25),
-            Constants.LOOP_PERIOD_SECONDS),
+        (speeds, feedForward) -> setRobotSpeeds(speeds),
+        new PPHolonomicDriveController(
+            new PIDConstants(5, 0, 0), new PIDConstants(5, 0, 0), Constants.LOOP_PERIOD_SECONDS),
+        DriveConstants.pathPlannerRobotConfig,
         AllianceFlipUtil::shouldFlip,
         this);
 
@@ -188,8 +180,13 @@ public class Drive extends SubsystemBase {
     }
 
     // Log current wheel speeds
-    Logger.recordOutput("SwerveStates/MeasuredWheelSpeeds", getWheelSpeeds().states);
-    Logger.recordOutput("SwerveStates/ModuleDesiredWheelSpeeds", getDesiredWheelSpeeds().states);
+    Logger.recordOutput("SwerveStates/MeasuredWheelSpeeds", getWheelSpeeds());
+    Logger.recordOutput("SwerveStates/ModuleDesiredWheelSpeeds", getDesiredWheelSpeeds());
+
+    // Log current chassis speeds
+    Logger.recordOutput("ChassisStates/MeasuredRobotSpeeds", getRobotSpeeds());
+    Logger.recordOutput(
+        "ChassisStates/ModuleDesiredSpeeds", kinematics.toChassisSpeeds(getDesiredWheelSpeeds()));
 
     // Update odometry
     double[] sampleTimestamps =
@@ -220,17 +217,17 @@ public class Drive extends SubsystemBase {
       if (gyroInputs.connected) {
         // Use the real gyro angle
         rawGyroRotation = gyroInputs.odometryYawPositions[i];
-        gyroConnectionAlert.set(false);
       } else {
         // Fallback option: use the delta of swerve module to create estimated amount twisted
         Twist2d twist = kinematics.toTwist2d(moduleDeltas);
         rawGyroRotation = rawGyroRotation.plus(new Rotation2d(twist.dtheta));
-        gyroConnectionAlert.set(true);
       }
 
       // Apply update to pose estimator
       pose = poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
     }
+
+    gyroConnectionAlert.set(!gyroInputs.connected && Constants.getMode() != Mode.SIM);
   }
 
   /**
@@ -252,11 +249,6 @@ public class Drive extends SubsystemBase {
     poseEstimator.resetPosition(rawGyroRotation, getWheelPositions(), pose);
   }
 
-  /** Reset heading/yaw to zero. */
-  public void zeroGyro() {
-    gyroIO.zeroGyro();
-  }
-
   /**
    * Adds a vision measurement to the pose estimator.
    *
@@ -265,7 +257,7 @@ public class Drive extends SubsystemBase {
    *     with an epoch since FPGA time startup.
    */
   public void addVisionMeasurement(Pose2d visionPose, double timestamp) {
-    addVisionMeasurement(visionPose, timestamp, VecBuilder.fill(0.9, 0.9, 0.9));
+    poseEstimator.addVisionMeasurement(visionPose, timestamp);
   }
 
   /**
@@ -281,7 +273,7 @@ public class Drive extends SubsystemBase {
   public void addVisionMeasurement(
       Pose2d visionPose, double timestamp, Matrix<N3, N1> standardDeviations) {
     poseEstimator.setVisionMeasurementStdDevs(standardDeviations);
-    poseEstimator.addVisionMeasurement(visionPose, timestamp);
+    addVisionMeasurement(visionPose, timestamp);
   }
 
   // --- Robot Speeds ---
@@ -302,7 +294,7 @@ public class Drive extends SubsystemBase {
    * @return translational speed in meters/sec and rotation speed in radians/sec
    */
   public ChassisSpeeds getRobotSpeeds(boolean fieldRelative) {
-    SwerveDriveWheelStates wheelSpeeds = getWheelSpeeds();
+    SwerveModuleState[] wheelSpeeds = getWheelSpeeds();
 
     ChassisSpeeds speeds = kinematics.toChassisSpeeds(wheelSpeeds);
 
@@ -338,9 +330,11 @@ public class Drive extends SubsystemBase {
               speeds, AllianceFlipUtil.apply(getPose().getRotation()));
     }
 
+    Logger.recordOutput("ChassisStates/DesiredRobotSpeeds", speeds);
+
     speeds = ChassisSpeeds.discretize(speeds, Constants.LOOP_PERIOD_SECONDS);
 
-    SwerveDriveWheelStates wheelSpeeds = kinematics.toWheelSpeeds(speeds);
+    SwerveModuleState[] wheelSpeeds = kinematics.toWheelSpeeds(speeds);
 
     setWheelSpeeds(wheelSpeeds);
   }
@@ -351,17 +345,17 @@ public class Drive extends SubsystemBase {
    * Set desired swerve modules for each swerve module. Each wheel state is a turn angle and drive
    * velocity in meters/second.
    *
-   * @return a {@link SwerveDriveWheelStates} object which contains an array of all desired swerve
+   * @param speeds array of {@link SwerveDriveWheelStates} which contains of all desired swerve
    *     module states
    */
-  public void setWheelSpeeds(SwerveDriveWheelStates speeds) {
+  public void setWheelSpeeds(SwerveModuleState[] speeds) {
 
-    SwerveDriveKinematics.desaturateWheelSpeeds(speeds.states, getMaxLinearSpeedMetersPerSec());
+    SwerveDriveKinematics.desaturateWheelSpeeds(speeds, getMaxLinearSpeedMetersPerSec());
 
-    Logger.recordOutput("SwerveStates/DesiredWheelSpeeds", speeds.states);
+    Logger.recordOutput("SwerveStates/DesiredWheelSpeeds", speeds);
 
     for (int i = 0; i < modules.length; i++) {
-      modules[i].setSpeeds(speeds.states[i]);
+      modules[i].setSpeeds(speeds[i]);
     }
   }
 
@@ -369,24 +363,20 @@ public class Drive extends SubsystemBase {
    * Get measured swerve module speeds for each swerve module. Each wheel state is a turn angle and
    * drive velocity in meters/second.
    *
-   * @return a {@link SwerveDriveWheelStates} object which contains an array of all swerve module
-   *     states
+   * @return array of {@link SwerveModuleState} which contains an array of all swerve module states
    */
-  public SwerveDriveWheelStates getWheelSpeeds() {
-    return new SwerveDriveWheelStates(
-        modules().map(Module::getSpeeds).toArray(SwerveModuleState[]::new));
+  public SwerveModuleState[] getWheelSpeeds() {
+    return modules().map(Module::getSpeeds).toArray(SwerveModuleState[]::new);
   }
 
   /**
    * Get desired swerve module desired speeds for each swerve module. Each wheel state is a turn
    * angle and drive velocity in meters/second.
    *
-   * @return a {@link SwerveDriveWheelStates} object which contains an array of all desired swerve
-   *     module states.
+   * @return array of {@link SwerveModuleState} which contains all desired swerve module states.
    */
-  public SwerveDriveWheelStates getDesiredWheelSpeeds() {
-    return new SwerveDriveWheelStates(
-        modules().map(Module::getDesiredState).toArray(SwerveModuleState[]::new));
+  public SwerveModuleState[] getDesiredWheelSpeeds() {
+    return modules().map(Module::getDesiredState).toArray(SwerveModuleState[]::new);
   }
 
   // --- Wheel Positions ---
@@ -395,12 +385,10 @@ public class Drive extends SubsystemBase {
    * Get measured swerve module position from each swerve module. Each wheel position is a turn
    * angle and drive position in meters
    *
-   * @return a {@link SwerveDriveWheelPositions} object which contains an array of all swerve module
-   *     positions
+   * @return array of {@link SwerveModulePosition} which contains all swerve module positions
    */
-  public SwerveDriveWheelPositions getWheelPositions() {
-    return new SwerveDriveWheelPositions(
-        modules().map(Module::getPosition).toArray(SwerveModulePosition[]::new));
+  public SwerveModulePosition[] getWheelPositions() {
+    return modules().map(Module::getPosition).toArray(SwerveModulePosition[]::new);
   }
 
   // --- Stops ---
