@@ -75,10 +75,14 @@ public class DriveConstants {
 
       case CANNON_BOT:
       default:
-        FRONT_LEFT_MODULE_CONFIG = new ModuleConfig(0, 0, 0, Rotation2d.fromRotations(0), false);
-        FRONT_RIGHT_MODULE_CONFIG = new ModuleConfig(0, 0, 0, Rotation2d.fromRotations(0), false);
-        BACK_LEFT_MODULE_CONFIG = new ModuleConfig(0, 0, 0, Rotation2d.fromRotations(0), false);
-        BACK_RIGHT_MODULE_CONFIG = new ModuleConfig(0, 0, 0, Rotation2d.fromRotations(0), false);
+        FRONT_LEFT_MODULE_CONFIG =
+            new ModuleConfig(19, 18, 39, Rotation2d.fromRotations(-0.186279296875), true);
+        FRONT_RIGHT_MODULE_CONFIG =
+            new ModuleConfig(2, 1, 37, Rotation2d.fromRotations(-0.677490234375 + 0.5), true);
+        BACK_LEFT_MODULE_CONFIG =
+            new ModuleConfig(11, 10, 36, Rotation2d.fromRotations(-0.8603515625), true);
+        BACK_RIGHT_MODULE_CONFIG =
+            new ModuleConfig(8, 9, 38, Rotation2d.fromRotations(-0.065185546875 + 0.5), true);
         break;
     }
   }
@@ -155,7 +159,7 @@ public class DriveConstants {
       default:
         driveMotor = DCMotor.getNEO(1);
         driveFeedforward = new FeedForward(0.1, 2.35, 0.53);
-        driveFeedback = new PID(0.1, 0.0, 0.0);
+        driveFeedback = new PID(0.0001, 0.0, 0.0);
         driveMotorCurrentLimit = 50;
         driveReduction = Mk4iReductions.L3.reduction;
 
