@@ -11,8 +11,8 @@ public class GatewayIOHardware implements GatewayIO {
   private final Transducer pressureSensor;
 
   public GatewayIOHardware() {
-    solenoid = new Solenoid(PneumaticsModuleType.REVPH, 14);
-    pressureSensor = new Transducer(1);
+    solenoid = new Solenoid(PneumaticsModuleType.REVPH, 8);
+    pressureSensor = new Transducer(3);
   }
 
   @Override
