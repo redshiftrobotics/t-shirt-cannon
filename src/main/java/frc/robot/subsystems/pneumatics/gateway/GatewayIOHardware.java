@@ -2,7 +2,6 @@ package frc.robot.subsystems.pneumatics.gateway;
 
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.Solenoid;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.pneumatics.hardwareWrappers.Transducer;
 
 public class GatewayIOHardware implements GatewayIO {
@@ -23,13 +22,13 @@ public class GatewayIOHardware implements GatewayIO {
 
   @Override
   public void beganFilling() {
-    SmartDashboard.putBoolean("Gateway", true);
+    // SmartDashboard.putBoolean("Gateway", true);
     solenoid.set(true);
   }
 
   @Override
   public void stopFilling() {
-    SmartDashboard.putBoolean("Gateway", false);
+    // SmartDashboard.putBoolean("Gateway", false);
     solenoid.set(false);
   }
 }

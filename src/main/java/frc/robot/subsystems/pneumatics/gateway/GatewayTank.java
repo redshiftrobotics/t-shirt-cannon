@@ -25,6 +25,8 @@ public class GatewayTank extends SubsystemBase {
 
   private double targetShotDistance;
 
+  private double pressureTolerance = GatewayConstants.DEFAULT_TOLERANCE_PRESSURE;
+
   /** Create a new GatewayTank subsystem */
   public GatewayTank(GatewayIO io) {
     this.io = io;
@@ -77,9 +79,7 @@ public class GatewayTank extends SubsystemBase {
    */
   public boolean isPressureWithinTolerance() {
     return MathUtil.isNear(
-        getPressure(),
-        shotTable.getDesiredPSI(targetShotDistance),
-        GatewayConstants.TOLERANCE_PRESSURE);
+        getPressure(), shotTable.getDesiredPSI(targetShotDistance), pressureTolerance);
   }
 
   /**
@@ -131,13 +131,17 @@ public class GatewayTank extends SubsystemBase {
   public void setTargetPressure(double psi) {
     controller.setThresholds(
         MathUtil.clamp(
-            psi - GatewayConstants.TOLERANCE_PRESSURE,
+            psi - pressureTolerance,
             GatewayConstants.MIN_ALLOWED_PRESSURE,
             GatewayConstants.MAX_ALLOWED_PRESSURE),
         MathUtil.clamp(
             psi, GatewayConstants.MIN_ALLOWED_PRESSURE, GatewayConstants.MAX_ALLOWED_PRESSURE));
 
     targetShotDistance = shotTable.getEstimatedLaunchDistance(psi);
+  }
+
+  public void setPressureTolerance(double tolerance) {
+    this.pressureTolerance = tolerance;
   }
 
   /** Sets the setpoint pressure to none. The compressor will not activate. */

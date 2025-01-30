@@ -50,7 +50,7 @@ public class DriverDashboard extends SubsystemBase {
 
   public void addSubsystem(SubsystemBase subsystem) {
     if (subsystem instanceof Drive) {
-      SmartDashboard.putData("Drive Subsystem", subsystem);
+      SmartDashboard.putData("DriveSubsystem", subsystem);
     } else {
       throw new IllegalArgumentException("Unknown subsystem can not be added to driver dashboard");
     }

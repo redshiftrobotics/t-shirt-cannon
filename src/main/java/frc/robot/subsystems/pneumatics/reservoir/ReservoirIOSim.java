@@ -7,7 +7,7 @@ public class ReservoirIOSim implements ReservoirIO {
 
   // Completely made up values, just to simulate the system
   private static final double COMPRESSOR_PSI_CHANGE_PER_SECOND = 1.25;
-  private static final double DRAIN_PSI_CHANGE_PER_SECOND = 3;
+  private static final double DRAIN_PSI_CHANGE_PER_SECOND = 0.1;
   private static final double PASSIVE_PSI_LEAK_PER_SECOND = 0.02;
 
   private BooleanSupplier isDrainingSupplier;

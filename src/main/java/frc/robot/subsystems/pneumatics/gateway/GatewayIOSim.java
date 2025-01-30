@@ -8,7 +8,7 @@ public class GatewayIOSim implements GatewayIO {
   // Completely made up values, just to simulate the system
   private static final double FILLING_PSI_CHANGE_PER_SECOND = 5;
   private static final double DRAIN_PSI_CHANGE_PER_SECOND = 20;
-  private static final double PASSIVE_PSI_LEAK_PER_SECOND = 0.02;
+  private static final double PASSIVE_PSI_LEAK_PER_SECOND = 0.2;
 
   private BooleanSupplier isDrainingSupplier;
 

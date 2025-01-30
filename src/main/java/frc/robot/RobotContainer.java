@@ -2,6 +2,7 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -11,7 +12,6 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -44,6 +44,7 @@ import frc.robot.utility.JoystickUtil;
 import frc.robot.utility.NormUtil;
 import frc.robot.utility.OverrideSwitch;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -58,8 +59,10 @@ public class RobotContainer {
   private final Drive drive;
 
   // Controller
+  private static final boolean ONE_CONTROLLER = true;
   private final CommandGenericHID driverController = new CommandXboxController(0);
-  private final CommandGenericHID operatorController = new CommandXboxController(1);
+  private final CommandGenericHID operatorController =
+      ONE_CONTROLLER ? null : new CommandXboxController(1);
 
   private final ReservoirTank reservoirTank;
   private final GatewayTank gatewayTank;
@@ -140,6 +143,14 @@ public class RobotContainer {
     reservoirTank.setSimDrain(gatewayTank::isFilling);
     gatewayTank.setSimDrain(firingTube::isOpen);
 
+    gatewayTank.setTargetPressure(ControlConstants.shotTankDefaultPressure);
+    gatewayTank.setPressureTolerance(ControlConstants.shotTankThresholdTolerance);
+
+    reservoirTank.setPressureThresholds(
+        ControlConstants.reservoirMinThresholdPressure,
+        ControlConstants.reservoirMaxThresholdPressure);
+    firingTube.setFireRequirements(() -> !gatewayTank.isFilling() || gatewayTank.isBackfilling());
+
     // Can also use AutoBuilder.buildAutoChooser(); instead of SendableChooser to
     // auto populate
     autoChooser = new LoggedDashboardChooser<>("Auto Chooser", new SendableChooser<Command>());
@@ -166,6 +177,224 @@ public class RobotContainer {
 
     // Configure the button bindings
     configureControllerBindings();
+  }
+
+  /** Define button->command mappings. */
+  private void configureControllerBindings() {
+    CommandScheduler.getInstance().getActiveButtonLoop().clear();
+    if (ONE_CONTROLLER) {
+      configureSingleController();
+    } else {
+      configureDriverControllerBindings();
+      configureOperatorControllerBindings();
+    }
+    configureAlertTriggers();
+  }
+
+  private void configureAlertTriggers() {
+    // RobotModeTriggers.teleop().onChange(rumbleControllers(0.2).withTimeout(0.1));
+
+    new Trigger(
+            () ->
+                NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.9
+                    || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
+                        > drive.getMaxAngularSpeedRadPerSec() * 0.9)
+        .debounce(0.3, DebounceType.kBoth)
+        .whileTrue(
+            reservoirTank
+                .startEnd(reservoirTank::pause, reservoirTank::unpause)
+                .withName("Pause: High Drive Speed"));
+
+    // VERY IMPORTANT: the firing tube checks if gateway is closed before firing (unless backfilling
+    // exception), so we better pause if the firing tube is requesting to fire
+    new Trigger(firingTube::isOpen)
+        .or(firingTube::isWaitingToFire)
+        .debounce(0.1, DebounceType.kBoth)
+        .whileTrue(
+            gatewayTank
+                .startEnd(gatewayTank::pause, gatewayTank::unpause)
+                .withName("Pause: Firing Tube Open"));
+  }
+
+  private void configureSingleController() {
+
+    final CommandXboxController driverXbox = (CommandXboxController) driverController;
+
+    final Trigger useFieldRelative =
+        new Trigger(new OverrideSwitch(driverXbox.y(), OverrideSwitch.Mode.TOGGLE, true));
+
+    // Controllers
+    final TeleopDriveController input =
+        new TeleopDriveController(
+            drive,
+            () -> -driverXbox.getLeftY(),
+            () -> -driverXbox.getLeftX(),
+            () -> -driverXbox.getRightY(),
+            () -> -driverXbox.getRightX());
+
+    DriverDashboard.getInstance().setSpeedLevelSupplier(() -> SpeedController.SpeedLevel.NO_LEVEL);
+    DriverDashboard.getInstance()
+        .setAngleDrivenSupplier(
+            () ->
+                Stream.of(
+                        driverXbox.povUp(),
+                        driverXbox.povDown(),
+                        driverXbox.povLeft(),
+                        driverXbox.povRight())
+                    .anyMatch(Trigger::getAsBoolean));
+    DriverDashboard.getInstance().setFieldRelativeSupplier(useFieldRelative);
+
+    // Default command
+    drive.setDefaultCommand(
+        drive
+            .runEnd(
+                () -> {
+                  Translation2d translation = input.getTranslationMetersPerSecond();
+                  double rotation = input.getOmegaRadiansPerSecond();
+                  drive.setRobotSpeeds(
+                      new ChassisSpeeds(translation.getX(), translation.getY(), rotation),
+                      useFieldRelative.getAsBoolean());
+                },
+                drive::stop)
+            .withName("DefaultDrive"));
+
+    // Drive reset gyro
+    driverXbox
+        .start()
+        .onTrue(
+            Commands.runOnce(
+                    () ->
+                        drive.resetPose(
+                            new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)))
+                .withName("Reset Rotation"));
+
+    // Drive cancel all commands
+    driverXbox
+        .b()
+        .or(RobotModeTriggers.disabled())
+        .onTrue(drive.runOnce(drive::stop).withName("StopCancel"))
+        .onTrue(Commands.runOnce(() -> driverXbox.setRumble(RumbleType.kBothRumble, 0)))
+        .whileTrue(
+            reservoirTank
+                .startEnd(reservoirTank::pause, reservoirTank::unpause)
+                .withName("Pause: Manuel Cancel (B Held)"))
+        .whileTrue(
+            gatewayTank
+                .startEnd(gatewayTank::pause, gatewayTank::unpause)
+                .withName("Pause: Manuel Cancel (B Held)"));
+
+    // Fire!
+    driverXbox
+        .rightTrigger()
+        .and(() -> !driverXbox.back().getAsBoolean() || gatewayTank.isPressureWithinTolerance())
+        .onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
+
+    // Backfill enabled
+    driverXbox
+        .leftTrigger()
+        .and(firingTube::isOpen)
+        .whileTrue(
+            gatewayTank
+                .startEnd(gatewayTank::backfill, gatewayTank::stopBackfill)
+                .withInterruptBehavior(InterruptionBehavior.kCancelIncoming)
+                .withName("Opened (Backfill): Left Trigger"));
+
+    // Vibrations
+    // Really need some LED for this
+    new Trigger(gatewayTank::isPressureWithinTolerance)
+        .debounce(0.3, DebounceType.kFalling)
+        .onTrue(
+            Commands.startEnd(
+                    () -> driverXbox.setRumble(RumbleType.kRightRumble, 0.05),
+                    () -> driverXbox.setRumble(RumbleType.kRightRumble, 0))
+                .withTimeout(0.5));
+
+    driverXbox
+        .back()
+        .whileTrue(
+            Commands.runEnd(
+                () -> {
+                  driverXbox.setRumble(
+                      RumbleType.kBothRumble, gatewayTank.isPressureWithinTolerance() ? 0.05 : 0);
+                },
+                () -> driverXbox.setRumble(RumbleType.kBothRumble, 0)));
+
+    // Rumble when firing
+    new Trigger(firingTube::isOpen)
+        .whileTrue(
+            Commands.runEnd(
+                    () -> {
+                      driverXbox.setRumble(
+                          RumbleType.kRightRumble,
+                          MathUtil.inverseInterpolate(
+                              GatewayConstants.MIN_ALLOWED_PRESSURE,
+                              GatewayConstants.MAX_ALLOWED_PRESSURE,
+                              gatewayTank.getPressure()));
+                      driverXbox.setRumble(
+                          RumbleType.kLeftRumble,
+                          (gatewayTank.isBackfilling()
+                              ? MathUtil.inverseInterpolate(
+                                  ReservoirConstants.MIN_ALLOWED_PRESSURE,
+                                  ReservoirConstants.MAX_ALLOWED_PRESSURE,
+                                  reservoirTank.getPressure())
+                              : 0));
+                    },
+                    () -> driverXbox.setRumble(RumbleType.kBothRumble, 0))
+                .withName("Firing Rumble"));
+
+    // Gateway default pressure
+    driverXbox
+        .a()
+        .onTrue(
+            Commands.runOnce(
+                () -> gatewayTank.setTargetPressure(ControlConstants.shotTankDefaultPressure)));
+
+    // Gateway secondary pressure
+    driverXbox
+        .x()
+        .onTrue(
+            Commands.runOnce(
+                () -> gatewayTank.setTargetPressure(ControlConstants.shotTankSecondaryPressure)));
+
+    // Gateway pressure change
+    driverXbox
+        .leftBumper()
+        .onTrue(
+            Commands.runOnce(
+                () ->
+                    gatewayTank.setTargetPressure(
+                        gatewayTank.getTargetPressure()
+                            - ControlConstants.shotTankPressureChange)));
+
+    driverXbox
+        .rightBumper()
+        .onTrue(
+            Commands.runOnce(
+                () ->
+                    gatewayTank.setTargetPressure(
+                        gatewayTank.getTargetPressure()
+                            + ControlConstants.shotTankPressureChange)));
+
+    // Dpad robot relative drive
+    driverXbox
+        .povLeft()
+        .whileTrue(
+            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, 3, 3)), drive::stop));
+
+    driverXbox
+        .povRight()
+        .whileTrue(
+            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, -3, -3)), drive::stop));
+
+    driverXbox
+        .povUp()
+        .whileTrue(
+            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(3, 0, 0)), drive::stop));
+
+    driverXbox
+        .povDown()
+        .whileTrue(
+            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(-3, 0, 0)), drive::stop));
   }
 
   /** Configure drive dashboard object */
@@ -197,14 +426,6 @@ public class RobotContainer {
         drive.runOnce(
             () -> drive.resetPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))),
         true);
-  }
-
-  /** Define button->command mappings. */
-  private void configureControllerBindings() {
-    CommandScheduler.getInstance().getActiveButtonLoop().clear();
-    configureDriverControllerBindings();
-    configureOperatorControllerBindings();
-    configureAlertTriggers();
   }
 
   private void configureDriverControllerBindings() {
@@ -281,7 +502,8 @@ public class RobotContainer {
       boolean includeDiagonalPOV = true;
       for (int pov = 0; pov < 360; pov += includeDiagonalPOV ? 45 : 90) {
 
-        // POV angles are in Clock Wise degrees, needs to be flipped to get correct rotation2d
+        // POV angles are in Clock Wise degrees, needs to be flipped to get correct
+        // rotation2d
         final Rotation2d angle = Rotation2d.fromDegrees(-pov);
         final String name = String.format("%d\u00B0", pov);
 
@@ -357,7 +579,8 @@ public class RobotContainer {
                     .withName(String.format("DriveLockedHeading %s", name)));
       }
 
-      // While X is held down go into stop and go into the cross position to resistant movement,
+      // While X is held down go into stop and go into the cross position to resistant
+      // movement,
       // then once X button is let go put modules forward
       driverXbox
           .x()
@@ -366,17 +589,23 @@ public class RobotContainer {
                   .startEnd(drive::stopUsingBrakeArrangement, drive::stopUsingForwardArrangement)
                   .withName("StopWithX"));
 
-      // When be is pressed stop the drivetrain then idle it, cancelling all incoming commands.
+      // Reset Rotation
+      driverXbox
+          .start()
+          .onTrue(
+              Commands.runOnce(
+                      () ->
+                          drive.resetPose(
+                              new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)))
+                  .withName("Reset Rotation"));
+
+      // When be is pressed stop the drivetrain then idle it, cancelling all incoming
+      // commands.
       // Also do this when robot is disabled
       driverXbox
           .b()
           .or(RobotModeTriggers.disabled())
-          .whileTrue(
-              drive
-                  .runOnce(drive::stop)
-                  .andThen(Commands.idle(drive))
-                  .withInterruptBehavior(InterruptionBehavior.kCancelIncoming)
-                  .withName("StopCancel"));
+          .onTrue(drive.runOnce(drive::stop).withName("StopCancel"));
 
       // When right (accelerator/fire) trigger is pressed, put in boost (fast) mode
       driverXbox
@@ -421,24 +650,13 @@ public class RobotContainer {
     if (operatorController instanceof CommandXboxController) {
       final CommandXboxController operatorXbox = (CommandXboxController) operatorController;
 
-      // TODO set up rest of control code in here. use default command to fill it 20, then have
+      // TODO set up rest of control code in here. use default command to fill it 20,
+      // then have
       // another command that idles it till it reaches 15
-      // Just display default command (fill to 20) and current command (pauses, etc) using subsystem
+      // Just display default command (fill to 20) and current command (pauses, etc)
+      // using subsystem
 
       // Set up reservoir tank
-
-      reservoirTank.setPressureThresholds(71, 75);
-      new Trigger(
-              () ->
-                  NormUtil.norm(drive.getRobotSpeeds())
-                          > drive.getMaxLinearSpeedMetersPerSec() * 0.7
-                      || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
-                          > drive.getMaxAngularSpeedRadPerSec() * 0.7)
-          .debounce(0.3, DebounceType.kBoth)
-          .whileTrue(
-              reservoirTank
-                  .startEnd(reservoirTank::pause, reservoirTank::unpause)
-                  .withName("Pause: Drive Speed"));
 
       operatorXbox
           .y()
@@ -447,25 +665,14 @@ public class RobotContainer {
                   .startEnd(reservoirTank::pause, reservoirTank::unpause)
                   .withName("Pause: Operator Y Button"));
 
-      // Set up gateway tank
-      gatewayTank.setTargetPressure(32);
-
-      new Trigger(firingTube::isOpen)
-          .or(firingTube::isWaitingToFire)
-          .debounce(0.1, DebounceType.kBoth)
-          .whileTrue(
-              gatewayTank
-                  .startEnd(gatewayTank::pause, gatewayTank::unpause)
-                  .withName("Pause: Firing Tube Open"));
-
-      new Trigger(firingTube::isOpen).whileTrue(rumbleControllers(0.5));
-
       operatorXbox
           .leftTrigger()
           .whileTrue(
               gatewayTank
-                  .startEnd(gatewayTank::pause, gatewayTank::pause)
+                  .startEnd(gatewayTank::pause, gatewayTank::unpause)
                   .withName("Pause: Operator Prepare Fire"));
+
+      new Trigger(firingTube::isOpen).whileTrue(rumbleControllers(0.5));
 
       operatorXbox
           .a()
@@ -475,9 +682,6 @@ public class RobotContainer {
               gatewayTank
                   .startEnd(gatewayTank::backfill, gatewayTank::stopBackfill)
                   .withName("Opened (Backfill): Operator A/X Button"));
-
-      // Set up firing tube
-      firingTube.setFireRequirements(() -> !gatewayTank.isFilling() || gatewayTank.isBackfilling());
 
       operatorXbox.rightTrigger().onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
 
@@ -528,27 +732,17 @@ public class RobotContainer {
     return Commands.startEnd(
             () -> {
               driverController.setRumble(RumbleType.kBothRumble, rumbleIntensity);
-              operatorController.setRumble(RumbleType.kBothRumble, rumbleIntensity);
+              if (operatorController != null) {
+                operatorController.setRumble(RumbleType.kBothRumble, rumbleIntensity);
+              }
             },
             () -> {
               driverController.setRumble(RumbleType.kBothRumble, 0);
-              operatorController.setRumble(RumbleType.kBothRumble, 0);
+              if (operatorController != null) {
+                operatorController.setRumble(RumbleType.kBothRumble, 0);
+              }
             })
         .withName("RumbleController");
-  }
-
-  private void configureAlertTriggers() {
-    // Endgame alert triggers
-    new Trigger(
-            () ->
-                DriverStation.isTeleopEnabled()
-                    && DriverStation.getMatchTime() > 0
-                    && DriverStation.getMatchTime() <= 20)
-        .onTrue(rumbleControllers(0.5).withTimeout(0.5));
-
-    RobotModeTriggers.teleop()
-        .and(RobotBase::isReal)
-        .onChange(rumbleControllers(0.2).withTimeout(0.2));
   }
 
   private void configureAutos() {

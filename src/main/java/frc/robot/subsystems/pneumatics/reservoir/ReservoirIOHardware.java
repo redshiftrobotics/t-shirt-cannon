@@ -3,7 +3,6 @@ package frc.robot.subsystems.pneumatics.reservoir;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.Relay.Direction;
 import edu.wpi.first.wpilibj.Relay.Value;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.pneumatics.hardwareWrappers.Transducer;
 
 public class ReservoirIOHardware implements ReservoirIO {
@@ -24,13 +23,13 @@ public class ReservoirIOHardware implements ReservoirIO {
 
   @Override
   public void startCompressor() {
-    SmartDashboard.putBoolean("Reservoir", true);
+    // SmartDashboard.putBoolean("Reservoir", true);
     output.set(Value.kOn);
   }
 
   @Override
   public void stopCompressor() {
-    SmartDashboard.putBoolean("Reservoir", false);
+    // SmartDashboard.putBoolean("Reservoir", false);
     output.set(Value.kOff);
   }
 }
