@@ -32,6 +32,7 @@ import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
+import frc.robot.subsystems.drive.ModuleIOSparkMax;
 import frc.robot.subsystems.drive.controllers.HeadingController;
 import frc.robot.subsystems.drive.controllers.SpeedController;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
@@ -80,10 +81,10 @@ public class RobotContainer {
         drive =
             new Drive(
                 new GyroIOPigeon2(DriveConstants.GYRO_CAN_ID),
-                new ModuleIOSim(DriveConstants.FRONT_LEFT_MODULE_CONFIG),
-                new ModuleIOSim(DriveConstants.FRONT_RIGHT_MODULE_CONFIG),
-                new ModuleIOSim(DriveConstants.BACK_LEFT_MODULE_CONFIG),
-                new ModuleIOSim(DriveConstants.BACK_RIGHT_MODULE_CONFIG));
+                new ModuleIOSparkMax(DriveConstants.FRONT_LEFT_MODULE_CONFIG),
+                new ModuleIOSparkMax(DriveConstants.FRONT_RIGHT_MODULE_CONFIG),
+                new ModuleIOSparkMax(DriveConstants.BACK_LEFT_MODULE_CONFIG),
+                new ModuleIOSparkMax(DriveConstants.BACK_RIGHT_MODULE_CONFIG));
         reservoirTank = new ReservoirTank(new ReservoirIOHardware());
         gatewayTank = new GatewayTank(new GatewayIOHardware());
         firingTube =
@@ -426,7 +427,7 @@ public class RobotContainer {
 
       // Set up reservoir tank
 
-      reservoirTank.setPressureThresholds(30, 35);
+      reservoirTank.setPressureThresholds(71, 75);
       new Trigger(
               () ->
                   NormUtil.norm(drive.getRobotSpeeds())
