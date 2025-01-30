@@ -1,0 +1,23 @@
+{
+  "title": "",
+  "titleColor": "#000000",
+  "labels": {
+    "Y": "Toggle Field Relative",
+    "B": "Cancel/Pause",
+    "D-pad Up": "Robot Forward",
+    "D-pad Left": "Robot Ark Left",
+    "D-pad Down": "Robot Backward",
+    "D-pad Right": "Robot Ark Right",
+    "Left Stick Y Axis": "Drive (Y Translation)",
+    "Left Stick X Axis": "Drive (X Translation)",
+    "Right Stick X Axis": "Drive (Rotation)",
+    "View": "PSI Check (Vibrate)",
+    "Menu": "Zero Gyro (FR reset)",
+    "Right Trigger": "Fire!!!",
+    "Left Trigger": "Backfill Enable",
+    "X": "Shot Set PSI (Second)",
+    "Right Bumper": "Shot Add PSI (+)",
+    "Left Bumper": "Shot Subtract PSI (-)",
+    "A": "Shot Set PSI (Default)"
+  }
+}
