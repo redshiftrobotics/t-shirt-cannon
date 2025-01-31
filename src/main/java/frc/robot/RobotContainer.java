@@ -305,7 +305,7 @@ public class RobotContainer {
         .debounce(0.3, DebounceType.kFalling)
         .onTrue(
             Commands.startEnd(
-                    () -> driverXbox.setRumble(RumbleType.kRightRumble, 0.05),
+                    () -> driverXbox.setRumble(RumbleType.kRightRumble, 0.3),
                     () -> driverXbox.setRumble(RumbleType.kRightRumble, 0))
                 .withTimeout(0.5));
 
@@ -379,22 +379,22 @@ public class RobotContainer {
     driverXbox
         .povLeft()
         .whileTrue(
-            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, 3, 3)), drive::stop));
+            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, 2, 3)), drive::stop));
 
     driverXbox
         .povRight()
         .whileTrue(
-            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, -3, -3)), drive::stop));
+            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, -2, -3)), drive::stop));
 
     driverXbox
         .povUp()
         .whileTrue(
-            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(3, 0, 0)), drive::stop));
+            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(2, 0, 0)), drive::stop));
 
     driverXbox
         .povDown()
         .whileTrue(
-            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(-3, 0, 0)), drive::stop));
+            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(-2, 0, 0)), drive::stop));
   }
 
   /** Configure drive dashboard object */
