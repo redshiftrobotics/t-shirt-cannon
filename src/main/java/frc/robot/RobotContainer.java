@@ -37,6 +37,9 @@ import frc.robot.subsystems.drive.controllers.HeadingController;
 import frc.robot.subsystems.drive.controllers.SpeedController;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
+import frc.robot.subsystems.led.LEDConstants;
+import frc.robot.subsystems.led.LEDConstants.LEDPatterns;
+import frc.robot.subsystems.led.LEDSubsystem;
 import frc.robot.subsystems.pneumatics.cannon.*;
 import frc.robot.subsystems.pneumatics.gateway.*;
 import frc.robot.subsystems.pneumatics.reservoir.*;
@@ -57,6 +60,7 @@ public class RobotContainer {
 
   // Subsystems
   private final Drive drive;
+  private final LEDSubsystem led;
 
   // Controller
   private static final boolean ONE_CONTROLLER = true;
@@ -78,6 +82,7 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    led = new LEDSubsystem(LEDConstants.PWM_PORT, LEDPatterns.GREEN);
 
     switch (Constants.getRobot()) {
       case CANNON_BOT:
@@ -214,6 +219,11 @@ public class RobotContainer {
             gatewayTank
                 .startEnd(gatewayTank::pause, gatewayTank::unpause)
                 .withName("Pause: Firing Tube Open"));
+
+    new Trigger(firingTube::isShirtLoaded).whileTrue(led.solid(LEDPatterns.RED));
+
+    new Trigger(firingTube::isOpen)
+        .whileTrue(led.flash(LEDPatterns.YELLOW, LEDPatterns.WHITE, 0.2));
   }
 
   private void configureSingleController() {
@@ -288,6 +298,8 @@ public class RobotContainer {
         .rightTrigger()
         .and(() -> !driverXbox.back().getAsBoolean() || gatewayTank.isPressureWithinTolerance())
         .onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
+
+    driverXbox.rightStick().onTrue(Commands.runOnce(firingTube::loadShirt));
 
     // Backfill enabled
     driverXbox

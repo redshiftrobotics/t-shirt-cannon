@@ -15,6 +15,8 @@ public class FiringTube extends SubsystemBase {
   private final Timer fireTimer;
   private boolean waitingToFire;
 
+  private boolean isLoaded = false;
+
   private BooleanSupplier fireRequirement = () -> true;
 
   /** Creates a new FiringTube subsystem */
@@ -33,6 +35,7 @@ public class FiringTube extends SubsystemBase {
       io.open();
       fireTimer.restart();
       waitingToFire = false;
+      isLoaded = false;
     }
 
     if (fireTimer.hasElapsed(CannonConstants.FIRE_TUBE_OPEN_TIME_SECONDS)) {
@@ -48,6 +51,19 @@ public class FiringTube extends SubsystemBase {
    */
   public boolean isOpen() {
     return inputs.isOpen;
+  }
+
+  public void loadShirt() {
+    isLoaded = true;
+  }
+
+  /**
+   * For LEDs, meaningless
+   *
+   * @return whether it should be loaded
+   */
+  public boolean isShirtLoaded() {
+    return isLoaded;
   }
 
   /**

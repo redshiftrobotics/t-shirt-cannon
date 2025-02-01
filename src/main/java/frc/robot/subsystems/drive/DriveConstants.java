@@ -40,8 +40,8 @@ public class DriveConstants {
             Units.inchesToMeters(2),
             new Translation2d(0.885, 0.885),
             new Translation2d(0.9612, 0.9612),
-            5.05968,
-            14.5);
+            8.05968,
+            17.5);
         default -> new DriveConfig(
             Units.inchesToMeters(2),
             new Translation2d(0.885, 0.885),
