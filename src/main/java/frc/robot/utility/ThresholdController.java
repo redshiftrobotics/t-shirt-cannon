@@ -95,12 +95,12 @@ public class ThresholdController {
    * @return 1 if the measurement is below the lower threshold or remains ON until the upper
    *     threshold is reached; otherwise, 0.
    */
-  public double calculate(double measurement) {
+  public boolean calculate(double measurement) {
     if (measurement > upperThreshold) {
       isOn = false;
     } else if (measurement < lowerThreshold) {
       isOn = true;
     }
-    return isOn ? 1 : 0;
+    return isOn;
   }
 }
