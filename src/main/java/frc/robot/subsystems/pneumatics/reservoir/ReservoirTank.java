@@ -33,7 +33,7 @@ public class ReservoirTank extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("ReservoirTank", inputs);
 
-    if (controller.calculate(inputs.tankPSI) > 0 && !paused && DriverStation.isEnabled()) {
+    if (controller.calculate(inputs.tankPSI) && !paused && DriverStation.isEnabled()) {
       io.startCompressor();
     } else {
       io.stopCompressor();

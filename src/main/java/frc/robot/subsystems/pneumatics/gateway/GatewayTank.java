@@ -1,6 +1,7 @@
 package frc.robot.subsystems.pneumatics.gateway;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.utility.ThresholdController;
@@ -17,6 +18,7 @@ public class GatewayTank extends SubsystemBase {
   private final GatewayIOInputsAutoLogged inputs = new GatewayIOInputsAutoLogged();
 
   private final ThresholdController controller;
+  private final Debouncer pressureDebouncer = new Debouncer(0.1);
 
   private final InterpolatingShotTable shotTable;
 
@@ -24,8 +26,6 @@ public class GatewayTank extends SubsystemBase {
   private boolean backfill;
 
   private double targetShotDistance;
-
-  private double pressureTolerance = GatewayConstants.DEFAULT_TOLERANCE_PRESSURE;
 
   /** Create a new GatewayTank subsystem */
   public GatewayTank(GatewayIO io) {
@@ -44,7 +44,9 @@ public class GatewayTank extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("GatewayTank", inputs);
 
-    if ((controller.calculate(inputs.tankPSI) > 0 && !paused && DriverStation.isEnabled())
+    if ((pressureDebouncer.calculate(controller.calculate(inputs.tankPSI))
+            && !paused
+            && DriverStation.isEnabled())
         || backfill) {
       io.beganFilling();
     } else {
@@ -79,7 +81,9 @@ public class GatewayTank extends SubsystemBase {
    */
   public boolean isPressureWithinTolerance() {
     return MathUtil.isNear(
-        getPressure(), shotTable.getDesiredPSI(targetShotDistance), pressureTolerance);
+        getPressure(),
+        shotTable.getDesiredPSI(targetShotDistance),
+        GatewayConstants.TOLERANCE_PRESSURE);
   }
 
   /**
@@ -131,17 +135,13 @@ public class GatewayTank extends SubsystemBase {
   public void setTargetPressure(double psi) {
     controller.setThresholds(
         MathUtil.clamp(
-            psi - pressureTolerance,
+            psi - GatewayConstants.TOLERANCE_PRESSURE,
             GatewayConstants.MIN_ALLOWED_PRESSURE,
             GatewayConstants.MAX_ALLOWED_PRESSURE),
         MathUtil.clamp(
             psi, GatewayConstants.MIN_ALLOWED_PRESSURE, GatewayConstants.MAX_ALLOWED_PRESSURE));
 
     targetShotDistance = shotTable.getEstimatedLaunchDistance(psi);
-  }
-
-  public void setPressureTolerance(double tolerance) {
-    this.pressureTolerance = tolerance;
   }
 
   /** Sets the setpoint pressure to none. The compressor will not activate. */

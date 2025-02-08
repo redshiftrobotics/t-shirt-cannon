@@ -148,7 +148,6 @@ public class RobotContainer {
     gatewayTank.setSimDrain(firingTube::isOpen);
 
     gatewayTank.setTargetPressure(ControlConstants.shotTankDefaultPressure);
-    gatewayTank.setPressureTolerance(ControlConstants.shotTankThresholdTolerance);
 
     reservoirTank.setPressureThresholds(
         ControlConstants.reservoirMinThresholdPressure,
