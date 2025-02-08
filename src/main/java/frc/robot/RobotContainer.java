@@ -44,7 +44,6 @@ import frc.robot.subsystems.pneumatics.cannon.*;
 import frc.robot.subsystems.pneumatics.gateway.*;
 import frc.robot.subsystems.pneumatics.reservoir.*;
 import frc.robot.utility.JoystickUtil;
-import frc.robot.utility.NormUtil;
 import frc.robot.utility.OverrideSwitch;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -199,16 +198,17 @@ public class RobotContainer {
   private void configureAlertTriggers() {
     // RobotModeTriggers.teleop().onChange(rumbleControllers(0.2).withTimeout(0.1));
 
-    new Trigger(
-            () ->
-                NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() * 0.9
-                    || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
-                        > drive.getMaxAngularSpeedRadPerSec() * 0.9)
-        .debounce(0.3, DebounceType.kBoth)
-        .whileTrue(
-            reservoirTank
-                .startEnd(reservoirTank::pause, reservoirTank::unpause)
-                .withName("Pause: High Drive Speed"));
+    // new Trigger(
+    //         () ->
+    //             NormUtil.norm(drive.getRobotSpeeds()) > drive.getMaxLinearSpeedMetersPerSec() *
+    // 0.9
+    //                 || Math.abs(drive.getRobotSpeeds().omegaRadiansPerSecond)
+    //                     > drive.getMaxAngularSpeedRadPerSec() * 0.9)
+    //     .debounce(0.3, DebounceType.kBoth)
+    //     .whileTrue(
+    //         reservoirTank
+    //             .startEnd(reservoirTank::pause, reservoirTank::unpause)
+    //             .withName("Pause: High Drive Speed"));
 
     // VERY IMPORTANT: the firing tube checks if gateway is closed before firing (unless backfilling
     // exception), so we better pause if the firing tube is requesting to fire
