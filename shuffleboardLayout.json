@@ -335,6 +335,62 @@
               "Colors/Color when true": "#7CFC00FF",
               "Colors/Color when false": "#8B0000FF"
             }
+          },
+          "6,4": {
+            "size": [
+              2,
+              1
+            ],
+            "content": {
+              "_type": "Grid Layout",
+              "_title": "Rumble",
+              "_glyph": 149,
+              "_showGlyph": false,
+              "Layout/Number of columns": 3,
+              "Layout/Number of rows": 3,
+              "Layout/Label position": "HIDDEN",
+              "_children": {
+                "0,0": {
+                  "_type": "Number Bar",
+                  "_source0": "network_table:///SmartDashboard/LeftControllerRumble",
+                  "_title": "/SmartDashboard/LeftControllerRumble",
+                  "_glyph": 148,
+                  "_showGlyph": false,
+                  "Range/Min": 0.0,
+                  "Range/Max": 1.0,
+                  "Range/Center": 0.0,
+                  "Visuals/Num tick marks": 5,
+                  "Visuals/Show text": true,
+                  "Visuals/Orientation": "VERTICAL"
+                },
+                "2,0": {
+                  "_type": "Number Bar",
+                  "_source0": "network_table:///SmartDashboard/RightControllerRumble",
+                  "_title": "/SmartDashboard/RightControllerRumble",
+                  "_glyph": 148,
+                  "_showGlyph": false,
+                  "Range/Min": 0.0,
+                  "Range/Max": 1.0,
+                  "Range/Center": 0.0,
+                  "Visuals/Num tick marks": 5,
+                  "Visuals/Show text": true,
+                  "Visuals/Orientation": "VERTICAL"
+                }
+              }
+            }
+          },
+          "8,4": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/LED Pattern",
+              "_title": "/SmartDashboard/LED Pattern",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
           }
         }
       }
@@ -354,9 +410,9 @@
     }
   ],
   "windowGeometry": {
-    "x": -7.333333492279053,
-    "y": -7.333333492279053,
-    "width": 1294.6666259765625,
-    "height": 686.6666870117188
+    "x": -4.0,
+    "y": 0.0,
+    "width": 1295.0,
+    "height": 687.0
   }
 }

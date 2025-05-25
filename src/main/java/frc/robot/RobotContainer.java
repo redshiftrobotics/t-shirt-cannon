@@ -226,29 +226,25 @@ public class RobotContainer {
 
   private void configureSingleController() {
 
-    final CommandXboxController driverXbox = (CommandXboxController) driverController;
+    final CommandXboxController xbox = (CommandXboxController) driverController;
 
     final Trigger useFieldRelative =
-        new Trigger(new OverrideSwitch(driverXbox.y(), OverrideSwitch.Mode.TOGGLE, true));
+        new Trigger(new OverrideSwitch(xbox.y(), OverrideSwitch.Mode.TOGGLE, true));
 
     // Controllers
     final TeleopDriveController input =
         new TeleopDriveController(
             drive,
-            () -> -driverXbox.getLeftY(),
-            () -> -driverXbox.getLeftX(),
-            () -> -driverXbox.getRightY(),
-            () -> -driverXbox.getRightX());
+            () -> -xbox.getLeftY(),
+            () -> -xbox.getLeftX(),
+            () -> -xbox.getRightY(),
+            () -> -xbox.getRightX());
 
     DriverDashboard.getInstance().setSpeedLevelSupplier(() -> SpeedController.SpeedLevel.NO_LEVEL);
     DriverDashboard.getInstance()
         .setAngleDrivenSupplier(
             () ->
-                Stream.of(
-                        driverXbox.povUp(),
-                        driverXbox.povDown(),
-                        driverXbox.povLeft(),
-                        driverXbox.povRight())
+                Stream.of(xbox.povUp(), xbox.povDown(), xbox.povLeft(), xbox.povRight())
                     .anyMatch(Trigger::getAsBoolean));
     DriverDashboard.getInstance().setFieldRelativeSupplier(useFieldRelative);
 
@@ -267,8 +263,7 @@ public class RobotContainer {
             .withName("DefaultDrive"));
 
     // Drive reset gyro
-    driverXbox
-        .start()
+    xbox.start()
         .debounce(0.3)
         .onTrue(
             drive
@@ -276,16 +271,18 @@ public class RobotContainer {
                     () ->
                         drive.resetPose(
                             new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)))
-                .andThen(rumbleControllers(0.3).withTimeout(0.25))
+                .andThen(
+                    Commands.runEnd(
+                            () -> rumbleController(xbox, 0.3), () -> rumbleController(xbox, 0))
+                        .withTimeout(0.25))
                 .ignoringDisable(true)
                 .withName("Reset Gyro Heading"));
 
     // Drive cancel all commands
-    driverXbox
-        .b()
+    xbox.b()
         .or(RobotModeTriggers.disabled())
         .onTrue(drive.runOnce(drive::stop).withName("StopCancel"))
-        .onTrue(Commands.runOnce(() -> driverXbox.setRumble(RumbleType.kBothRumble, 0)))
+        .onTrue(Commands.runOnce(() -> rumbleController(xbox, 0)))
         .whileTrue(
             reservoirTank
                 .startEnd(reservoirTank::pause, reservoirTank::unpause)
@@ -296,16 +293,14 @@ public class RobotContainer {
                 .withName("Pause: Manuel Cancel (B Held)"));
 
     // Fire!
-    driverXbox
-        .rightTrigger()
-        .and(() -> !driverXbox.back().getAsBoolean() || gatewayTank.isPressureWithinTolerance())
+    xbox.rightTrigger()
+        .and(() -> !xbox.back().getAsBoolean() || gatewayTank.isPressureWithinTolerance())
         .onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
 
-    driverXbox.back().onTrue(Commands.runOnce(firingTube::loadShirt));
+    xbox.back().onTrue(Commands.runOnce(firingTube::loadShirt));
 
     // Backfill enabled
-    driverXbox
-        .leftTrigger()
+    xbox.leftTrigger()
         .and(firingTube::isOpen)
         .whileTrue(
             gatewayTank
@@ -318,61 +313,52 @@ public class RobotContainer {
     new Trigger(gatewayTank::isPressureWithinTolerance)
         .debounce(0.3, DebounceType.kFalling)
         .onTrue(
-            Commands.startEnd(
-                    () -> driverXbox.setRumble(RumbleType.kRightRumble, 0.3),
-                    () -> driverXbox.setRumble(RumbleType.kRightRumble, 0))
+            Commands.startEnd(() -> rumbleController(xbox, 0, 0.3), () -> rumbleController(xbox, 0))
                 .withTimeout(0.5));
 
-    driverXbox
-        .back()
+    xbox.back()
         .whileTrue(
             Commands.runEnd(
                 () -> {
-                  driverXbox.setRumble(
-                      RumbleType.kBothRumble, gatewayTank.isPressureWithinTolerance() ? 0.05 : 0);
+                  rumbleController(xbox, gatewayTank.isPressureWithinTolerance() ? 0.05 : 0);
                 },
-                () -> driverXbox.setRumble(RumbleType.kBothRumble, 0)));
+                () -> rumbleController(xbox, 0)));
 
     // Rumble when firing
     new Trigger(firingTube::isOpen)
         .whileTrue(
             Commands.runEnd(
                     () -> {
-                      driverXbox.setRumble(
-                          RumbleType.kRightRumble,
+                      rumbleController(
+                          xbox,
                           MathUtil.inverseInterpolate(
                               GatewayConstants.MIN_ALLOWED_PRESSURE,
                               GatewayConstants.MAX_ALLOWED_PRESSURE,
-                              gatewayTank.getPressure()));
-                      driverXbox.setRumble(
-                          RumbleType.kLeftRumble,
-                          (gatewayTank.isBackfilling()
+                              gatewayTank.getPressure()),
+                          gatewayTank.isBackfilling()
                               ? MathUtil.inverseInterpolate(
                                   ReservoirConstants.MIN_ALLOWED_PRESSURE,
                                   ReservoirConstants.MAX_ALLOWED_PRESSURE,
                                   reservoirTank.getPressure())
-                              : 0));
+                              : 0);
                     },
-                    () -> driverXbox.setRumble(RumbleType.kBothRumble, 0))
+                    () -> rumbleController(xbox, 0))
                 .withName("Firing Rumble"));
 
     // Gateway default pressure
-    driverXbox
-        .a()
+    xbox.a()
         .onTrue(
             Commands.runOnce(
                 () -> gatewayTank.setTargetPressure(ControlConstants.shotTankDefaultPressure)));
 
     // Gateway secondary pressure
-    driverXbox
-        .x()
+    xbox.x()
         .onTrue(
             Commands.runOnce(
                 () -> gatewayTank.setTargetPressure(ControlConstants.shotTankSecondaryPressure)));
 
     // Gateway pressure change
-    driverXbox
-        .leftBumper()
+    xbox.leftBumper()
         .onTrue(
             Commands.runOnce(
                 () ->
@@ -380,8 +366,7 @@ public class RobotContainer {
                         gatewayTank.getTargetPressure()
                             - ControlConstants.shotTankPressureChange)));
 
-    driverXbox
-        .rightBumper()
+    xbox.rightBumper()
         .onTrue(
             Commands.runOnce(
                 () ->
@@ -390,25 +375,35 @@ public class RobotContainer {
                             + ControlConstants.shotTankPressureChange)));
 
     // Dpad robot relative drive
-    driverXbox
-        .povLeft()
+    xbox.povLeft()
         .whileTrue(
             drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, 2, 3)), drive::stop));
 
-    driverXbox
-        .povRight()
+    xbox.povRight()
         .whileTrue(
             drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, -2, -3)), drive::stop));
 
-    driverXbox
-        .povUp()
+    xbox.povUp()
         .whileTrue(
             drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(2, 0, 0)), drive::stop));
 
-    driverXbox
-        .povDown()
+    xbox.povDown()
         .whileTrue(
             drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(-2, 0, 0)), drive::stop));
+  }
+
+  private static void rumbleController(CommandGenericHID controller, double rumbleIntensity) {
+    controller.setRumble(RumbleType.kBothRumble, rumbleIntensity);
+    SmartDashboard.putNumber("LeftControllerRumble", rumbleIntensity);
+    SmartDashboard.putNumber("RightControllerRumble", rumbleIntensity);
+  }
+
+  private static void rumbleController(
+      CommandGenericHID controller, double leftIntensity, double rightIntensity) {
+    controller.setRumble(RumbleType.kLeftRumble, leftIntensity);
+    SmartDashboard.putNumber("LeftControllerRumble", leftIntensity);
+    controller.setRumble(RumbleType.kRightRumble, rightIntensity);
+    SmartDashboard.putNumber("RightControllerRumble", rightIntensity);
   }
 
   /** Configure drive dashboard object */
