@@ -1,0 +1,29 @@
+{
+  "title": "Cannon",
+  "titleColor": "#1e458a",
+  "labels": {
+    "Y": "toggle field relative",
+    "B": "cancel and pause",
+    "D-pad Up": "drive robot forward",
+    "D-pad Left": "drive robot ark left",
+    "D-pad Down": "drive robot backward",
+    "D-pad Right": "drive robot ark right",
+    "Left Stick Y Axis": "drive (y translation)",
+    "Left Stick X Axis": "drive (x translation)",
+    "Right Stick X Axis": "drive (rotation)",
+    "View": "shot ready check",
+    "Menu": "zero gyro (hold)",
+    "Right Trigger": "fire shot",
+    "Left Trigger": "enable shot backfill",
+    "X": "set power shot psi",
+    "Right Bumper": "increase shot psi",
+    "Left Bumper": "decrease shot psi",
+    "A": "reset shot psi",
+    "Right Stick Button": ""
+  },
+  "titleAlign": "center",
+  "time": "2025-05-25T01:21:03.171Z",
+  "sourceHref": "https://michaellesirge.github.io/simple-web-projects/xbox-diagram-maker/",
+  "sourceName": "michaellesirge.github.io",
+  "version": "1.0.0"
+}

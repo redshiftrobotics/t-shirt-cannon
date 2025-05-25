@@ -1,13 +1,12 @@
 package frc.robot;
 
-import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -270,12 +269,16 @@ public class RobotContainer {
     // Drive reset gyro
     driverXbox
         .start()
+        .debounce(0.3)
         .onTrue(
-            Commands.runOnce(
+            drive
+                .runOnce(
                     () ->
                         drive.resetPose(
                             new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)))
-                .withName("Reset Rotation"));
+                .andThen(rumbleControllers(0.3).withTimeout(0.25))
+                .ignoringDisable(true)
+                .withName("Reset Gyro Heading"));
 
     // Drive cancel all commands
     driverXbox
@@ -298,7 +301,7 @@ public class RobotContainer {
         .and(() -> !driverXbox.back().getAsBoolean() || gatewayTank.isPressureWithinTolerance())
         .onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
 
-    driverXbox.rightStick().onTrue(Commands.runOnce(firingTube::loadShirt));
+    driverXbox.back().onTrue(Commands.runOnce(firingTube::loadShirt));
 
     // Backfill enabled
     driverXbox
@@ -757,13 +760,27 @@ public class RobotContainer {
   }
 
   private void configureAutos() {
-    // Set up named commands for path planner auto
-    // https://pathplanner.dev/pplib-named-commands.html
-    NamedCommands.registerCommand("StopWithX", drive.runOnce(drive::stopUsingBrakeArrangement));
-    // Path planner Autos
-    // https://pathplanner.dev/gui-editing-paths-and-autos.html#autos
-    autoChooser.addOption("Triangle Auto", new PathPlannerAuto("Triangle Auto"));
-    autoChooser.addOption("Rotate Auto", new PathPlannerAuto("Rotate Auto"));
+    autoChooser.addDefaultOption("None", Commands.none());
+    autoChooser.addOption(
+        "Spin CCW",
+        drive.runEnd(
+            () -> drive.setRobotSpeeds(new ChassisSpeeds(0, 0, Units.degreesToRadians(45))),
+            drive::stop));
+    autoChooser.addOption(
+        "Spin CW",
+        drive.runEnd(
+            () -> drive.setRobotSpeeds(new ChassisSpeeds(0, 0, Units.degreesToRadians(-45))),
+            drive::stop));
+    autoChooser.addOption(
+        "Slow Spin CCW",
+        drive.runEnd(
+            () -> drive.setRobotSpeeds(new ChassisSpeeds(0, 0, Units.degreesToRadians(15))),
+            drive::stop));
+    autoChooser.addOption(
+        "Slow Spin CW",
+        drive.runEnd(
+            () -> drive.setRobotSpeeds(new ChassisSpeeds(0, 0, Units.degreesToRadians(-15))),
+            drive::stop));
   }
 
   private void configureSysIds() {
