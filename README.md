@@ -1,4 +1,4 @@
-# T-Shirt Cannon 
+# T-Shirt Cannon
 
 This project contains robot code for 8032's T-Shirt cannon robot. This robot was built created preseason of 2025.
 
@@ -7,7 +7,7 @@ This project contains robot code for 8032's T-Shirt cannon robot. This robot was
 </div>
 
 
-## Driving and operating controls 
+## Driving and operating controls
 We chose to go with a single controller scheme for driver convince.
 
 ![Xbox controller diagram labeled](diagrams/cannon-controller-labeled.png)
@@ -32,7 +32,7 @@ The LEDs are mostly for audience viewing experience. Here the the different mode
 * Flashing Yellow/White: Firing
 
 ## Simulation
-* Simulation is key to making sure control logic is safe and correct, and controls act as expected. Although PSI changes are largely incorrect they still roughly mimic real behavior. The video below shows the robot simulation in AdvantageScope with pneumatics sim data in Shuffleboard.  
+* Simulation is key to making sure control logic is safe and correct, and controls act as expected. Although PSI changes are largely incorrect they still roughly mimic real behavior. The video below shows the robot simulation in AdvantageScope with pneumatics sim data in Shuffleboard.
 
 https://github.com/user-attachments/assets/d6b8d52f-94d8-4c34-9652-7c8a6fbbd129
 
@@ -40,5 +40,3 @@ https://github.com/user-attachments/assets/d6b8d52f-94d8-4c34-9652-7c8a6fbbd129
 ## Pneumatics
 ![Pneumatics diagram](pneumatics-diagram.jpg)
 ![Construction of pneumatics](https://github.com/user-attachments/assets/88899e3b-f5db-48e6-ad85-b19ac2bffef1)
-
-
