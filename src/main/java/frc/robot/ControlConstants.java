@@ -1,5 +1,7 @@
 package frc.robot;
 
+import frc.robot.subsystems.led.LEDPattern;
+
 /** ALL VALUES ARE IN PSI */
 public class ControlConstants {
 
@@ -32,4 +34,10 @@ public class ControlConstants {
    * left and right bumpers are pressed
    */
   public static final double shotTankPressureChange = 5.0;
+
+  /** LED Patterns */
+  public static final LEDPattern idlePattern = LEDPattern.PARTY_PALETTE;
+
+  public static final LEDPattern loadedPattern = LEDPattern.BPM_PARTY;
+  public static final LEDPattern firingPattern = LEDPattern.STROBE_RED;
 }

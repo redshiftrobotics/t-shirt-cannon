@@ -37,7 +37,6 @@ import frc.robot.subsystems.drive.controllers.SpeedController;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
 import frc.robot.subsystems.led.LEDConstants;
-import frc.robot.subsystems.led.LEDConstants.LEDPatterns;
 import frc.robot.subsystems.led.LEDSubsystem;
 import frc.robot.subsystems.pneumatics.cannon.*;
 import frc.robot.subsystems.pneumatics.gateway.*;
@@ -80,7 +79,7 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
-    led = new LEDSubsystem(LEDConstants.PWM_PORT, LEDPatterns.GREEN);
+    led = new LEDSubsystem(LEDConstants.PWM_PORTS);
 
     switch (Constants.getRobot()) {
       case CANNON_BOT:
@@ -218,10 +217,11 @@ public class RobotContainer {
                 .startEnd(gatewayTank::pause, gatewayTank::unpause)
                 .withName("Pause: Firing Tube Open"));
 
-    new Trigger(firingTube::isShirtLoaded).whileTrue(led.solid(LEDPatterns.RED));
-
+    led.setDefaultCommand(led.setColor(ControlConstants.idlePattern).withName("LED Idle"));
+    new Trigger(firingTube::isShirtLoaded)
+        .whileTrue(led.setColor(ControlConstants.loadedPattern).withName("LED Loaded"));
     new Trigger(firingTube::isOpen)
-        .whileTrue(led.flash(LEDPatterns.YELLOW, LEDPatterns.WHITE, 0.2));
+        .whileTrue(led.setColor(ControlConstants.firingPattern).withName("LED Firing"));
   }
 
   private void configureSingleController() {
@@ -297,6 +297,7 @@ public class RobotContainer {
         .and(() -> !xbox.back().getAsBoolean() || gatewayTank.isPressureWithinTolerance())
         .onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
 
+    // "Load Shirt" (really just set loaded to true)
     xbox.back().onTrue(Commands.runOnce(firingTube::loadShirt));
 
     // Backfill enabled

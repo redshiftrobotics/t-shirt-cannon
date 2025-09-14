@@ -336,7 +336,7 @@
               "Colors/Color when false": "#8B0000FF"
             }
           },
-          "6,4": {
+          "5,4": {
             "size": [
               2,
               1
@@ -379,17 +379,45 @@
               }
             }
           },
-          "8,4": {
+          "10,4": {
             "size": [
               1,
               1
             ],
             "content": {
               "_type": "Text View",
-              "_source0": "network_table:///SmartDashboard/LED Pattern",
-              "_title": "/SmartDashboard/LED Pattern",
+              "_source0": "network_table:///AdvantageKit/RealOutputs/LED/measuredPulses",
+              "_title": "/AdvantageKit/RealOutputs/LED/measuredPulses",
               "_glyph": 148,
               "_showGlyph": false
+            }
+          },
+          "8,4": {
+            "size": [
+              2,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///AdvantageKit/RealOutputs/LED/targetPulse",
+              "_title": "/AdvantageKit/RealOutputs/LED/targetPulse",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "7,4": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Boolean Box",
+              "_source0": "network_table:///AdvantageKit/RealOutputs/LED/hasSetup",
+              "_title": "/AdvantageKit/RealOutputs/LED/hasSetup",
+              "_glyph": 148,
+              "_showGlyph": false,
+              "Colors/Color when true": "#7CFC00FF",
+              "Colors/Color when false": "#8B0000FF"
             }
           }
         }
@@ -410,9 +438,9 @@
     }
   ],
   "windowGeometry": {
-    "x": -4.0,
-    "y": 0.0,
+    "x": 930.0,
+    "y": 279.0,
     "width": 1295.0,
-    "height": 687.0
+    "height": 737.0
   }
 }
