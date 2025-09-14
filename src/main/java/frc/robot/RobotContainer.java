@@ -375,22 +375,21 @@ public class RobotContainer {
                         gatewayTank.getTargetPressure()
                             + ControlConstants.shotTankPressureChange)));
 
-    // Dpad robot relative drive
-    xbox.povLeft()
-        .whileTrue(
-            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, 2, 3)), drive::stop));
+    for (int i = 0; i < 360; i += 45) {
+      final Rotation2d angle = Rotation2d.fromDegrees(-i);
+      final String name = String.format("Robot Strafe %s\u00B0", angle.unaryMinus().getDegrees());
 
-    xbox.povRight()
-        .whileTrue(
-            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(0, -2, -3)), drive::stop));
+      final ChassisSpeeds speeds =
+          new ChassisSpeeds(
+              Units.feetToMeters(6) * angle.getCos(),
+              Units.feetToMeters(6) * angle.getSin(),
+              Units.degreesToRadians(180) * angle.getSin());
 
-    xbox.povUp()
-        .whileTrue(
-            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(2, 0, 0)), drive::stop));
-
-    xbox.povDown()
-        .whileTrue(
-            drive.startEnd(() -> drive.setRobotSpeeds(new ChassisSpeeds(-2, 0, 0)), drive::stop));
+      xbox.pov(i)
+          .debounce(0.2)
+          .whileTrue(
+              drive.run(() -> drive.setRobotSpeeds(speeds)).finallyDo(drive::stop).withName(name));
+    }
   }
 
   private static void rumbleController(CommandGenericHID controller, double rumbleIntensity) {
