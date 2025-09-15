@@ -4,7 +4,7 @@ package frc.robot.subsystems.led;
  * @brief LED patterns and solid colors for REV Blinkin
  * @link https://www.revrobotics.com/content/docs/REV-11-1105-UM.pdf
  */
-public enum LEDPattern {
+public enum BlinkenLEDPattern {
   // Off
   OFF(1995), // same as SolidColors.BLACK
 
@@ -146,7 +146,7 @@ public enum LEDPattern {
 
   private final int pulse;
 
-  LEDPattern(int pulse) {
+  BlinkenLEDPattern(int pulse) {
     this.pulse = pulse;
   }
 

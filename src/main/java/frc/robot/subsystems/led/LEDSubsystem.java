@@ -5,15 +5,15 @@ import edu.wpi.first.wpilibj.PWM;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class LEDSubsystem extends SubsystemBase {
 
   private final Timer startupTimer = new Timer();
 
-  private LEDPattern defaultPattern = LEDConstants.OFF;
+  private BlinkenLEDPattern defaultPattern = LEDConstants.OFF;
 
   private LEDStrip[] strips;
 
@@ -48,39 +48,38 @@ public class LEDSubsystem extends SubsystemBase {
         "LED/targetPulse",
         Stream.of(strips)
             .map(LEDStrip::getTargetPattern)
-            .map(LEDPattern::toString)
+            .map(BlinkenLEDPattern::toString)
             .toList()
             .toString());
   }
 
-  public Command setColor(LEDPattern color) {
-    return startEnd(() -> applyAll(color), () -> applyAll(defaultPattern));
+  public Command applyColor(BlinkenLEDPattern color) {
+    return startEnd(() -> set(color), () -> set(defaultPattern));
+  }
+
+  public Command applyColor(Supplier<BlinkenLEDPattern> color) {
+    return runEnd(() -> set(color.get()), () -> set(defaultPattern));
   }
 
   public Command turnOff() {
-    return setColor(LEDConstants.OFF);
+    return applyColor(LEDConstants.OFF);
   }
 
-  private void applyAll(LEDPattern pattern) {
+  public void set(BlinkenLEDPattern pattern) {
     Stream.of(strips).forEach(strip -> strip.setPattern(pattern));
-  }
-
-  @AutoLogOutput(key = "LED/hasSetUp")
-  public boolean hasSetUp() {
-    return !startupTimer.isRunning();
   }
 
   private class LEDStrip {
     // Todo: Make this IO layer
     private final PWM pwm;
-    private LEDPattern pattern;
+    private BlinkenLEDPattern pattern;
 
-    public LEDStrip(PWM pwmController, LEDPattern initialPattern) {
+    public LEDStrip(PWM pwmController, BlinkenLEDPattern initialPattern) {
       pwm = pwmController;
       pattern = initialPattern;
     }
 
-    public void setPattern(LEDPattern pattern) {
+    public void setPattern(BlinkenLEDPattern pattern) {
       this.pattern = pattern;
     }
 
@@ -88,7 +87,7 @@ public class LEDSubsystem extends SubsystemBase {
       pwm.setPulseTimeMicroseconds(2125);
     }
 
-    public LEDPattern getTargetPattern() {
+    public BlinkenLEDPattern getTargetPattern() {
       return pattern;
     }
 

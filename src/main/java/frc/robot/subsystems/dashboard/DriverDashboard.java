@@ -117,7 +117,8 @@ public class DriverDashboard extends SubsystemBase {
 
     if (poseSupplier != null) {
       Pose2d pose = poseSupplier.get();
-      SmartDashboard.putNumber("Heading Degrees", -pose.getRotation().getDegrees());
+      SmartDashboard.putNumber(
+          "Heading Degrees", Double.valueOf((-pose.getRotation().getDegrees() + 360) % 360));
     }
 
     if (speedsSupplier != null) {

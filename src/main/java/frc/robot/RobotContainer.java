@@ -36,6 +36,7 @@ import frc.robot.subsystems.drive.controllers.HeadingController;
 import frc.robot.subsystems.drive.controllers.SpeedController;
 import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
+import frc.robot.subsystems.led.BlinkenLEDPattern;
 import frc.robot.subsystems.led.LEDConstants;
 import frc.robot.subsystems.led.LEDSubsystem;
 import frc.robot.subsystems.pneumatics.cannon.*;
@@ -72,6 +73,8 @@ public class RobotContainer {
   // Dashboard
   private final DriverDashboard dashboard = DriverDashboard.getInstance();
   private final LoggedDashboardChooser<Command> autoChooser;
+
+  private final SendableChooser<BlinkenLEDPattern> ledPatternChooser;
 
   // Alerts
   private final Alert tuningModeActiveAlert =
@@ -159,6 +162,15 @@ public class RobotContainer {
     // Configure autos
     configureAutos();
 
+    // Configure LEDs
+    ledPatternChooser = new SendableChooser<>();
+    ledPatternChooser.setDefaultOption(
+        String.format("Default (%s)", ControlConstants.idlePattern), ControlConstants.idlePattern);
+    for (BlinkenLEDPattern pattern : BlinkenLEDPattern.values()) {
+      ledPatternChooser.addOption(pattern.toString(), pattern);
+    }
+    led.setDefaultCommand(led.applyColor(ledPatternChooser::getSelected).withName("LED Idle"));
+
     // Configure sysids
     if (Constants.TUNING_MODE) {
       configureSysIds();
@@ -217,11 +229,10 @@ public class RobotContainer {
                 .startEnd(gatewayTank::pause, gatewayTank::unpause)
                 .withName("Pause: Firing Tube Open"));
 
-    led.setDefaultCommand(led.setColor(ControlConstants.idlePattern).withName("LED Idle"));
     new Trigger(firingTube::isShirtLoaded)
-        .whileTrue(led.setColor(ControlConstants.loadedPattern).withName("LED Loaded"));
+        .whileTrue(led.applyColor(ControlConstants.loadedPattern).withName("LED Loaded"));
     new Trigger(firingTube::isOpen)
-        .whileTrue(led.setColor(ControlConstants.firingPattern).withName("LED Firing"));
+        .whileTrue(led.applyColor(ControlConstants.firingPattern).withName("LED Firing"));
   }
 
   private void configureSingleController() {
@@ -409,6 +420,7 @@ public class RobotContainer {
   /** Configure drive dashboard object */
   private void initDashboard() {
     SmartDashboard.putData("Auto Chooser", autoChooser.getSendableChooser());
+    SmartDashboard.putData("LED Pattern Chooser", ledPatternChooser);
 
     dashboard.addSubsystem(drive);
     dashboard.setPoseSupplier(drive::getPose);
@@ -434,6 +446,13 @@ public class RobotContainer {
         "Reset Rotation",
         drive.runOnce(
             () -> drive.resetPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))),
+        true);
+
+    dashboard.addCommand(
+        "Stop Autofill (Dashboard)",
+        Commands.parallel(
+            reservoirTank.startEnd(reservoirTank::pause, reservoirTank::unpause),
+            gatewayTank.startEnd(gatewayTank::pause, gatewayTank::unpause)),
         true);
   }
 
@@ -756,6 +775,12 @@ public class RobotContainer {
 
   private void configureAutos() {
     autoChooser.addDefaultOption("None", Commands.none());
+    autoChooser.addOption(
+        "None + Stop Autofill",
+        Commands.parallel(
+                reservoirTank.startEnd(reservoirTank::pause, reservoirTank::unpause),
+                gatewayTank.startEnd(gatewayTank::pause, gatewayTank::unpause))
+            .withName("Stop Autofill (Auto)"));
     autoChooser.addOption(
         "Spin CCW",
         drive.runEnd(
