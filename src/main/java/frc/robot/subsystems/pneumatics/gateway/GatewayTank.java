@@ -133,13 +133,16 @@ public class GatewayTank extends SubsystemBase {
    * @param psi target pressure in psi (pound per square inch)
    */
   public void setTargetPressure(double psi) {
-    controller.setThresholds(
+    double lowerThreshold =
         MathUtil.clamp(
             psi - GatewayConstants.TOLERANCE_PRESSURE,
             GatewayConstants.MIN_ALLOWED_PRESSURE,
-            GatewayConstants.MAX_ALLOWED_PRESSURE),
+            GatewayConstants.MAX_ALLOWED_PRESSURE);
+    double upperThreshold =
         MathUtil.clamp(
-            psi, GatewayConstants.MIN_ALLOWED_PRESSURE, GatewayConstants.MAX_ALLOWED_PRESSURE));
+            psi, GatewayConstants.MIN_ALLOWED_PRESSURE, GatewayConstants.MAX_ALLOWED_PRESSURE);
+
+    controller.setThresholds(lowerThreshold, upperThreshold);
 
     targetShotDistance = shotTable.getEstimatedLaunchDistance(psi);
   }

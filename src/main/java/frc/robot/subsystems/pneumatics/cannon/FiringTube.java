@@ -17,6 +17,8 @@ public class FiringTube extends SubsystemBase {
 
   private boolean isLoaded = false;
 
+  private double fireTubeOpenDurationSeconds = 0;
+
   private BooleanSupplier fireRequirement = () -> true;
 
   /** Creates a new FiringTube subsystem */
@@ -38,7 +40,7 @@ public class FiringTube extends SubsystemBase {
       isLoaded = false;
     }
 
-    if (fireTimer.hasElapsed(CannonConstants.FIRE_TUBE_OPEN_TIME_SECONDS)) {
+    if (fireTimer.hasElapsed(fireTubeOpenDurationSeconds)) {
       io.close();
       fireTimer.stop();
     }
@@ -88,6 +90,15 @@ public class FiringTube extends SubsystemBase {
    */
   public void setFireRequirements(BooleanSupplier fireRequirement) {
     this.fireRequirement = fireRequirement;
+  }
+
+  /**
+   * Sets the duration the firing tube will stay open after being fired.
+   *
+   * @param fireTubeOpenDurationSeconds duration in seconds
+   */
+  public void setFireTubeOpenDurationSeconds(double fireTubeOpenDurationSeconds) {
+    this.fireTubeOpenDurationSeconds = fireTubeOpenDurationSeconds;
   }
 
   /**

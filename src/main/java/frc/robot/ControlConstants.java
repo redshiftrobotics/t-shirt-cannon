@@ -5,9 +5,15 @@ import frc.robot.subsystems.led.BlinkenLEDPattern;
 /** ALL VALUES ARE IN PSI */
 public class ControlConstants {
 
+  /** Time in seconds to leave the fire tube open when firing */
+  public static final double FIRE_TUBE_OPEN_TIME_SECONDS = 1;
+
   /**
    * Threshold which reservoir tank (Big one) will try to fill to. Once this pressure is reached the
    * compressor will turn off.
+   *
+   * <p>(100 PSI is the max, if the physical system changes, edit {@link
+   * ReservoirConstants.MAX_ALLOWED_PRESSURE})
    */
   public static final double reservoirMaxThresholdPressure = 100.0;
 

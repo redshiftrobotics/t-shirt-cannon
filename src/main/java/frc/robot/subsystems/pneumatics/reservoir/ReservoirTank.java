@@ -1,5 +1,6 @@
 package frc.robot.subsystems.pneumatics.reservoir;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.utility.ThresholdController;
@@ -81,24 +82,16 @@ public class ReservoirTank extends SubsystemBase {
     if (minPressure >= maxPressure) {
       throw new IllegalArgumentException("maxPressure must be greater than minPressure");
     }
-    if (minPressure < ReservoirConstants.MIN_ALLOWED_PRESSURE
-        || minPressure > ReservoirConstants.MAX_ALLOWED_PRESSURE) {
-      throw new IllegalArgumentException(
-          String.format(
-              "minPressure must be between %s and %s PSI, got %s",
-              ReservoirConstants.MIN_ALLOWED_PRESSURE,
-              ReservoirConstants.MAX_ALLOWED_PRESSURE,
-              minPressure));
-    }
-    if (maxPressure < ReservoirConstants.MIN_ALLOWED_PRESSURE
-        || maxPressure > ReservoirConstants.MAX_ALLOWED_PRESSURE) {
-      throw new IllegalArgumentException(
-          String.format(
-              "maxPressure must be between %s and %s PSI, got %s",
-              ReservoirConstants.MIN_ALLOWED_PRESSURE,
-              ReservoirConstants.MAX_ALLOWED_PRESSURE,
-              maxPressure));
-    }
+    minPressure =
+        MathUtil.clamp(
+            minPressure,
+            ReservoirConstants.MIN_ALLOWED_PRESSURE,
+            ReservoirConstants.MAX_ALLOWED_PRESSURE);
+    maxPressure =
+        MathUtil.clamp(
+            maxPressure,
+            ReservoirConstants.MIN_ALLOWED_PRESSURE,
+            ReservoirConstants.MAX_ALLOWED_PRESSURE);
 
     controller.setThresholds(minPressure, maxPressure);
   }

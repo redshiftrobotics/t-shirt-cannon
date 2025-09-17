@@ -146,7 +146,9 @@ public class RobotContainer {
     reservoirTank.setPressureThresholds(
         ControlConstants.reservoirMinThresholdPressure,
         ControlConstants.reservoirMaxThresholdPressure);
+
     firingTube.setFireRequirements(() -> !gatewayTank.isFilling() || gatewayTank.isBackfilling());
+    firingTube.setFireTubeOpenDurationSeconds(ControlConstants.FIRE_TUBE_OPEN_TIME_SECONDS);
 
     // Configure autos
     autoChooser = new LoggedDashboardChooser<>("Auto Chooser", new SendableChooser<Command>());
@@ -327,7 +329,8 @@ public class RobotContainer {
     final Function<DoubleSupplier, Command> setPressureCommand =
         (DoubleSupplier pressure) ->
             Commands.runOnce(() -> gatewayTank.setTargetPressure(pressure.getAsDouble()))
-                .ignoringDisable(true).withName("Set Pressure");
+                .ignoringDisable(true)
+                .withName("Set Pressure");
 
     // Set gateway pressure to default setpoint
     xbox.a().onTrue(setPressureCommand.apply(() -> ControlConstants.shotTankDefaultPressure));
