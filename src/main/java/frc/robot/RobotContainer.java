@@ -152,14 +152,14 @@ public class RobotContainer {
     // Configure autos
     autoChooser = new LoggedDashboardChooser<>("Auto Chooser", new SendableChooser<Command>());
     configureAutos(autoChooser);
-    dashboard.addChooser(autoChooser);
+    dashboard.addChooser("Auto Chooser", autoChooser);
 
     // Configure LEDs
     ledPatternChooser =
         new LoggedDashboardChooser<>(
             "LED Pattern Chooser", new SendableChooser<BlinkenLEDPattern>());
     configureLEDs(ledPatternChooser);
-    dashboard.addChooser(ledPatternChooser);
+    dashboard.addChooser("LED Pattern Chooser", ledPatternChooser);
 
     // Configure alert triggers
     configureAlertTriggers();

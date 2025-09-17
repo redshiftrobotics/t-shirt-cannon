@@ -63,8 +63,8 @@ public class DriverDashboard extends SubsystemBase {
     SmartDashboard.putData(name, command.withName(name).ignoringDisable(runsWhenDisabled));
   }
 
-  public void addChooser(LoggedDashboardChooser<?> chooser) {
-    SmartDashboard.putData(chooser.getSendableChooser());
+  public void addChooser(String name, LoggedDashboardChooser<?> chooser) {
+    SmartDashboard.putData(name, chooser.getSendableChooser());
   }
 
   // --- Periodic updates to dashboard ---
