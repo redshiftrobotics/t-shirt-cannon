@@ -38,6 +38,8 @@ import frc.robot.subsystems.pneumatics.gateway.*;
 import frc.robot.subsystems.pneumatics.reservoir.*;
 import frc.robot.utility.OverrideSwitch;
 import java.util.Optional;
+import java.util.function.DoubleSupplier;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -219,7 +221,7 @@ public class RobotContainer {
                   double rotation =
                       SwerveJoystickUtil.getOmegaRadiansPerSecond(
                           -xbox.getRightX(), drive.getMaxAngularSpeedRadPerSec());
-                          
+
                   drive.setRobotSpeeds(
                       new ChassisSpeeds(translation.getX(), translation.getY(), rotation),
                       useFieldRelative.getAsBoolean());
@@ -298,16 +300,17 @@ public class RobotContainer {
     // Fire!
     xbox.rightTrigger()
         .and(
-            () ->
-                !xbox.back().getAsBoolean()
-                    || gatewayTank
-                        .isPressureWithinTolerance()) // if check button is held then require
-        // pressure to be good
+            xbox.back()
+                .negate()
+                .or(
+                    gatewayTank
+                        ::isPressureWithinTolerance)) // if checking wait until pressure is good to
+        // trigger fire
         .onTrue(firingTube.runOnce(firingTube::fire).withName("Fire"));
 
     // "Load Shirt" (really just set loaded to true, for LEDs)
     // This is also on "check" button for convenience
-    xbox.back().onTrue(Commands.runOnce(firingTube::loadShirt));
+    xbox.back().onTrue(Commands.runOnce(firingTube::loadShirt).ignoringDisable(true));
 
     // Backfill enabled (this means that the shot will release air from the gateway and the
     // reservoir). Consider this an "overfill"/ extra power mode
@@ -321,35 +324,28 @@ public class RobotContainer {
 
     // --- Gateway Setpoint Pressure Controls ---
 
+    final Function<DoubleSupplier, Command> setPressureCommand =
+        (DoubleSupplier pressure) ->
+            Commands.runOnce(() -> gatewayTank.setTargetPressure(pressure.getAsDouble()))
+                .ignoringDisable(true).withName("Set Pressure");
+
     // Set gateway pressure to default setpoint
-    xbox.a()
-        .onTrue(
-            Commands.runOnce(
-                () -> gatewayTank.setTargetPressure(ControlConstants.shotTankDefaultPressure)));
+    xbox.a().onTrue(setPressureCommand.apply(() -> ControlConstants.shotTankDefaultPressure));
 
     // Set gateway pressure to secondary setpoint
-    xbox.x()
-        .onTrue(
-            Commands.runOnce(
-                () -> gatewayTank.setTargetPressure(ControlConstants.shotTankSecondaryPressure)));
+    xbox.x().onTrue(setPressureCommand.apply(() -> ControlConstants.shotTankSecondaryPressure));
 
     // Increase gateway pressure setpoint
     xbox.leftBumper()
         .onTrue(
-            Commands.runOnce(
-                () ->
-                    gatewayTank.setTargetPressure(
-                        gatewayTank.getTargetPressure()
-                            - ControlConstants.shotTankPressureChange)));
+            setPressureCommand.apply(
+                () -> gatewayTank.getTargetPressure() - ControlConstants.shotTankPressureChange));
 
     // Decrease gateway pressure setpoint
     xbox.rightBumper()
         .onTrue(
-            Commands.runOnce(
-                () ->
-                    gatewayTank.setTargetPressure(
-                        gatewayTank.getTargetPressure()
-                            + ControlConstants.shotTankPressureChange)));
+            setPressureCommand.apply(
+                () -> gatewayTank.getTargetPressure() + ControlConstants.shotTankPressureChange));
 
     // --- Rumble Feedback ---
 
@@ -361,8 +357,7 @@ public class RobotContainer {
     // Check button (when held, the controller will rumble if good)
     xbox.back().whileTrue(rumble(0.05).onlyIf(gatewayTank::isPressureWithinTolerance));
 
-    // Rumble when firing. Power on left vibrator, reservoir pressure on right vibrator if
-    // backfilling
+    // Rumble when firing.
     new Trigger(firingTube::isOpen)
         .whileTrue(
             Commands.runEnd(
@@ -408,8 +403,9 @@ public class RobotContainer {
 
   private Command rumble(double value) {
     return Commands.startEnd(
-        () -> xbox.setRumble(RumbleType.kBothRumble, value),
-        () -> xbox.setRumble(RumbleType.kBothRumble, 0));
+            () -> xbox.setRumble(RumbleType.kBothRumble, value),
+            () -> xbox.setRumble(RumbleType.kBothRumble, 0))
+        .ignoringDisable(true);
   }
 
   /** Configure drive dashboard object */
