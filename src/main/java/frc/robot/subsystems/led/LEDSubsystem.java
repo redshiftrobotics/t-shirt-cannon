@@ -13,8 +13,6 @@ public class LEDSubsystem extends SubsystemBase {
 
   private final Timer startupTimer = new Timer();
 
-  private BlinkenLEDPattern defaultPattern = LEDConstants.OFF;
-
   private LEDStrip[] strips;
 
   public LEDSubsystem(int... pwmPorts) {
@@ -54,11 +52,11 @@ public class LEDSubsystem extends SubsystemBase {
   }
 
   public Command applyColor(BlinkenLEDPattern color) {
-    return startEnd(() -> set(color), () -> set(defaultPattern));
+    return run(() -> set(color));
   }
 
   public Command applyColor(Supplier<BlinkenLEDPattern> color) {
-    return runEnd(() -> set(color.get()), () -> set(defaultPattern));
+    return run(() -> set(color.get()));
   }
 
   public Command turnOff() {
