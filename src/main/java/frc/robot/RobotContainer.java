@@ -28,7 +28,8 @@ import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOSparkMax;
-import frc.robot.subsystems.drive.controllers.TeleopDriveController;
+import frc.robot.subsystems.drive.controllers.HeadingController;
+import frc.robot.subsystems.drive.controllers.SwerveJoystickUtil;
 import frc.robot.subsystems.led.BlinkenLEDPattern;
 import frc.robot.subsystems.led.LEDConstants;
 import frc.robot.subsystems.led.LEDSubsystem;
@@ -36,6 +37,7 @@ import frc.robot.subsystems.pneumatics.cannon.*;
 import frc.robot.subsystems.pneumatics.gateway.*;
 import frc.robot.subsystems.pneumatics.reservoir.*;
 import frc.robot.utility.OverrideSwitch;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -197,15 +199,6 @@ public class RobotContainer {
     final Trigger useFieldRelative =
         new Trigger(new OverrideSwitch(xbox.y(), OverrideSwitch.Mode.TOGGLE, true));
 
-    // Controllers
-    final TeleopDriveController input =
-        new TeleopDriveController(
-            drive,
-            () -> -xbox.getLeftY(),
-            () -> -xbox.getLeftX(),
-            () -> -xbox.getRightY(),
-            () -> -xbox.getRightX());
-
     dashboard.fieldRelativeSupplier = useFieldRelative::getAsBoolean;
     dashboard.angleDrivenSupplier =
         () ->
@@ -217,14 +210,52 @@ public class RobotContainer {
         drive
             .runEnd(
                 () -> {
-                  Translation2d translation = input.getTranslationMetersPerSecond();
-                  double rotation = input.getOmegaRadiansPerSecond();
+                  Translation2d translation =
+                      SwerveJoystickUtil.getTranslationMetersPerSecond(
+                          -xbox.getLeftY(),
+                          -xbox.getLeftX(),
+                          drive.getMaxLinearSpeedMetersPerSec());
+
+                  double rotation =
+                      SwerveJoystickUtil.getOmegaRadiansPerSecond(
+                          -xbox.getRightX(), drive.getMaxAngularSpeedRadPerSec());
+                          
                   drive.setRobotSpeeds(
                       new ChassisSpeeds(translation.getX(), translation.getY(), rotation),
                       useFieldRelative.getAsBoolean());
                 },
                 drive::stop)
             .withName("Drive"));
+
+    // Heading controlled drive
+    final HeadingController headingController = new HeadingController(drive);
+    xbox.rightStick()
+        .debounce(0.1)
+        .whileTrue(
+            drive
+                .runEnd(
+                    () -> {
+                      Translation2d translation =
+                          SwerveJoystickUtil.getTranslationMetersPerSecond(
+                              -xbox.getLeftY(),
+                              -xbox.getLeftX(),
+                              drive.getMaxLinearSpeedMetersPerSec());
+
+                      Optional<Rotation2d> heading =
+                          SwerveJoystickUtil.getHeadingDirection(
+                              -xbox.getRightY(), -xbox.getRightX());
+
+                      heading.ifPresent(headingController::setGoal);
+
+                      double rotation = headingController.calculate();
+
+                      drive.setRobotSpeeds(
+                          new ChassisSpeeds(translation.getX(), translation.getY(), rotation),
+                          useFieldRelative.getAsBoolean());
+                    },
+                    drive::stop)
+                .beforeStarting(headingController::reset)
+                .withName("Heading Drive"));
 
     // --- Safety Controls ---
 
