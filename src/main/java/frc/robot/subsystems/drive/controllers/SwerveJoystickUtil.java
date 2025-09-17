@@ -28,7 +28,7 @@ public class SwerveJoystickUtil {
 
     // squaring the magnitude of the vector makes for quicker ramp up and slower fine control,
     // magnitude should always be positive
-    double magnitudeSquared = Math.abs(Math.pow(magnitude, LINEAR_VELOCITY_EXPONENT));
+    double magnitudeSquared = Math.pow(magnitude, LINEAR_VELOCITY_EXPONENT);
 
     // get a vector with the same angle as the base linear velocity vector but with the
     // magnitude squared
