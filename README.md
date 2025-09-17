@@ -38,5 +38,6 @@ https://github.com/user-attachments/assets/d6b8d52f-94d8-4c34-9652-7c8a6fbbd129
 
 
 ## Pneumatics
+Please see the ControlConstants.java file for key control variables.
 ![Pneumatics diagram](pneumatics-diagram.jpg)
 ![Construction of pneumatics](https://github.com/user-attachments/assets/88899e3b-f5db-48e6-ad85-b19ac2bffef1)
