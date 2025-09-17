@@ -8,38 +8,35 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.drive.controllers.SpeedController;
-import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
 
 /** Command to drive when new driver is trying robot out */
 public class SafeDriveMode extends Command {
 
+  public static final double TRANSLATION_SPEED_SCALE = 0.5;
+  public static final double ROTATION_SPEED_SCALE = 0.5;
+
   private final Drive drive;
   private final TeleopDriveController controller;
-  private final SpeedLevel speedLevel;
   private final boolean fieldRelative;
   private final Translation2d bottomLeftAllowedCorner;
   private final Translation2d topRightAllowedCorner;
 
   private final Timer breakModeTimer;
 
-  public SafeDriveMode(
-      Drive drive, TeleopDriveController controller, SpeedLevel speedLevel, boolean fieldRelative) {
-    this(drive, controller, speedLevel, fieldRelative, null, null);
+  public SafeDriveMode(Drive drive, TeleopDriveController controller, boolean fieldRelative) {
+    this(drive, controller, fieldRelative, null, null);
   }
 
   public SafeDriveMode(
       Drive drive,
       TeleopDriveController controller,
-      SpeedLevel speedLevel,
       boolean fieldRelative,
       Translation2d bottomLeftAllowedCorner,
       Translation2d topRightAllowedCorner) {
     this.drive = drive;
     this.controller = controller;
 
-    this.speedLevel = speedLevel;
     this.fieldRelative = fieldRelative;
 
     this.bottomLeftAllowedCorner = bottomLeftAllowedCorner;
@@ -68,12 +65,11 @@ public class SafeDriveMode extends Command {
       breakModeTimer.restart();
 
       if (enabled && teleop) {
-        Translation2d translation = controller.getTranslationMetersPerSecond();
-        double rotation = controller.getOmegaRadiansPerSecond();
+        Translation2d translation =
+            controller.getTranslationMetersPerSecond().times(TRANSLATION_SPEED_SCALE);
+        double rotation = controller.getOmegaRadiansPerSecond() * ROTATION_SPEED_SCALE;
         drive.setRobotSpeeds(
-            SpeedController.applySpeedLevel(
-                new ChassisSpeeds(translation.getX(), translation.getY(), rotation), speedLevel),
-            fieldRelative);
+            new ChassisSpeeds(translation.getX(), translation.getY(), rotation), fieldRelative);
       }
     } else {
       if (enabled) {
