@@ -31,7 +31,7 @@ public class FiringTube extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("FiringTube" + name, inputs);
 
-    if (waitingToFire && fireRequirement.getAsBoolean()) {
+    if (isWaitingToFire() && fireRequirement.getAsBoolean()) {
       io.open();
       fireTimer.restart();
       waitingToFire = false;

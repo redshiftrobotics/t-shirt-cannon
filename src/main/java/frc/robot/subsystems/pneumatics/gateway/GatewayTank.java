@@ -45,9 +45,9 @@ public class GatewayTank extends SubsystemBase {
     Logger.processInputs("GatewayTank", inputs);
 
     if ((pressureDebouncer.calculate(controller.calculate(inputs.tankPSI))
-            && !paused
+            && !isPaused()
             && DriverStation.isEnabled())
-        || backfill) {
+        || isBackfilling()) {
       io.beganFilling();
     } else {
       io.stopFilling();
