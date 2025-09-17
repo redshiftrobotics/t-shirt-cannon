@@ -1,6 +1,7 @@
 {
   "title": "Cannon",
   "titleColor": "#1e458a",
+  "titleAlign": "center",
   "labels": {
     "Y": "toggle field relative",
     "B": "cancel and pause",
@@ -19,10 +20,10 @@
     "Right Bumper": "increase shot psi",
     "Left Bumper": "decrease shot psi",
     "A": "reset shot psi",
-    "Right Stick Button": ""
+    "Right Stick Button": "enable heading drive"
   },
-  "titleAlign": "center",
-  "time": "2025-05-25T01:21:03.171Z",
+  "iso": "2025-09-17T07:41:21.465Z",
+  "date": "9/17/2025, 12:41:21 AM",
   "sourceHref": "https://michaellesirge.github.io/simple-web-projects/xbox-diagram-maker/",
   "sourceName": "michaellesirge.github.io",
   "version": "1.0.0"

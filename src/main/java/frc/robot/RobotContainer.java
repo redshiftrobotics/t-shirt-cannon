@@ -40,7 +40,6 @@ import frc.robot.utility.OverrideSwitch;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -203,11 +202,11 @@ public class RobotContainer {
     final Trigger useFieldRelative =
         new Trigger(new OverrideSwitch(xbox.y(), OverrideSwitch.Mode.TOGGLE, true));
 
-    dashboard.fieldRelativeSupplier = useFieldRelative::getAsBoolean;
-    dashboard.angleDrivenSupplier =
-        () ->
-            Stream.of(xbox.povUp(), xbox.povDown(), xbox.povLeft(), xbox.povRight())
-                .anyMatch(Trigger::getAsBoolean);
+    final Trigger useAngleDriven =
+        new Trigger(new OverrideSwitch(xbox.rightStick(), OverrideSwitch.Mode.HOLD, false));
+
+    dashboard.fieldRelativeSupplier = useFieldRelative;
+    dashboard.angleDrivenSupplier = useAngleDriven;
 
     // Default command
     drive.setDefaultCommand(
@@ -233,7 +232,7 @@ public class RobotContainer {
 
     // Heading controlled drive
     final HeadingController headingController = new HeadingController(drive);
-    xbox.rightStick()
+    useAngleDriven
         .debounce(0.1)
         .whileTrue(
             drive
@@ -259,7 +258,7 @@ public class RobotContainer {
                     },
                     drive::stop)
                 .beforeStarting(headingController::reset)
-                .withName("Heading Drive"));
+                .withName("Heading-Drive"));
 
     // --- Safety Controls ---
 
