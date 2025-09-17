@@ -1,18 +1,21 @@
 package frc.robot.subsystems.dashboard;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.drive.controllers.SpeedController.SpeedLevel;
 import frc.robot.utility.NormUtil;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 public class DriverDashboard extends SubsystemBase {
+
+  private final double MPS_TO_MPH = 2.23694;
 
   // --- Singleton Setup ---
 
@@ -25,26 +28,26 @@ public class DriverDashboard extends SubsystemBase {
     return instance;
   }
 
-  // --- Fields ---
+  // --- Fields with safe defaults ---
 
-  private Supplier<Pose2d> poseSupplier;
-  private Supplier<ChassisSpeeds> speedsSupplier;
-  private Supplier<SpeedLevel> speedLevelSupplier;
-  private BooleanSupplier fieldRelativeSupplier;
-  private BooleanSupplier angleDrivenSupplier;
+  public Supplier<ChassisSpeeds> speedsSupplier = () -> new ChassisSpeeds(0, 0, 0);
 
-  private BooleanSupplier reservoirTankFilling;
-  private DoubleSupplier reservoirTankPressure;
-  private Supplier<String> reservoirTankStatus;
+  public Supplier<Pose2d> poseSupplier = Pose2d::new;
+  public BooleanSupplier fieldRelativeSupplier = () -> false;
+  public BooleanSupplier angleDrivenSupplier = () -> false;
 
-  private BooleanSupplier gatewayTankFilling;
-  private DoubleSupplier gatewayTankPressure;
-  private Supplier<String> gatewayTankStatus;
+  public BooleanSupplier reservoirTankFilling = () -> false;
+  public DoubleSupplier reservoirTankPressure = () -> 0.0;
+  public Supplier<String> reservoirTankStatus = () -> "Unknown";
 
-  private BooleanSupplier readyToFireSupplier;
-  private DoubleSupplier targetPressure;
-  private BooleanSupplier backfillMode;
-  private BooleanSupplier cannonOpen;
+  public BooleanSupplier gatewayTankFilling = () -> false;
+  public DoubleSupplier gatewayTankPressure = () -> 0.0;
+  public Supplier<String> gatewayTankStatus = () -> "Unknown";
+
+  public BooleanSupplier readyToFireSupplier = () -> false;
+  public DoubleSupplier targetPressure = () -> 0.0;
+  public BooleanSupplier backfillMode = () -> false;
+  public BooleanSupplier cannonOpen = () -> false;
 
   // --- Setters ---
 
@@ -52,7 +55,7 @@ public class DriverDashboard extends SubsystemBase {
     if (subsystem instanceof Drive) {
       SmartDashboard.putData("DriveSubsystem", subsystem);
     } else {
-      throw new IllegalArgumentException("Unknown subsystem can not be added to driver dashboard");
+      throw new IllegalArgumentException("Unknown subsystem cannot be added to driver dashboard");
     }
   }
 
@@ -60,129 +63,38 @@ public class DriverDashboard extends SubsystemBase {
     SmartDashboard.putData(name, command.withName(name).ignoringDisable(runsWhenDisabled));
   }
 
-  public void setPoseSupplier(Supplier<Pose2d> robotPoseSupplier) {
-    this.poseSupplier = robotPoseSupplier;
+  public void addChooser(LoggedDashboardChooser<?> chooser) {
+    SmartDashboard.putData(chooser.getSendableChooser());
   }
 
-  public void setRobotSpeedsSupplier(Supplier<ChassisSpeeds> robotSpeedsSupplier) {
-    this.speedsSupplier = robotSpeedsSupplier;
-  }
-
-  public void setSpeedLevelSupplier(Supplier<SpeedLevel> speedLevelSupplier) {
-    this.speedLevelSupplier = speedLevelSupplier;
-  }
-
-  public void setFieldRelativeSupplier(BooleanSupplier fieldRelativeSupplier) {
-    this.fieldRelativeSupplier = fieldRelativeSupplier;
-  }
-
-  public void setAngleDrivenSupplier(BooleanSupplier angleDrivenSupplier) {
-    this.angleDrivenSupplier = angleDrivenSupplier;
-  }
-
-  public void setReservoirTank(
-      BooleanSupplier reservoirTankFilling,
-      DoubleSupplier reservoirTankPressure,
-      Supplier<String> reservoirTankStatus) {
-    this.reservoirTankFilling = reservoirTankFilling;
-    this.reservoirTankPressure = reservoirTankPressure;
-    this.reservoirTankStatus = reservoirTankStatus;
-  }
-
-  public void setGatewayTank(
-      BooleanSupplier gatewayTankFilling,
-      DoubleSupplier gatewayTankPressure,
-      Supplier<String> gatewayTankStatus) {
-    this.gatewayTankFilling = gatewayTankFilling;
-    this.gatewayTankPressure = gatewayTankPressure;
-    this.gatewayTankStatus = gatewayTankStatus;
-  }
-
-  public void setCannon(
-      BooleanSupplier readyToFireSupplier,
-      DoubleSupplier targetPressure,
-      BooleanSupplier backfillMode,
-      BooleanSupplier cannonOpen) {
-    this.readyToFireSupplier = readyToFireSupplier;
-    this.targetPressure = targetPressure;
-    this.backfillMode = backfillMode;
-    this.cannonOpen = cannonOpen;
-  }
+  // --- Periodic updates to dashboard ---
 
   @Override
   public void periodic() {
-    // TODO set this up to be more programmatic, and not need a periodic method. Task for someone.
-    // https://docs.wpilib.org/en/stable/docs/software/dashboards/shuffleboard/layouts-with-code/index.html
-    // Example in Commands/SwerveModuleOffsetReader.java
+    Pose2d pose = poseSupplier.get();
+    SmartDashboard.putNumber(
+        "Heading Degrees",
+        pose.getRotation().getDegrees() == 0
+            ? 0
+            : MathUtil.inputModulus(-pose.getRotation().getDegrees(), 0, 360));
 
-    if (poseSupplier != null) {
-      Pose2d pose = poseSupplier.get();
-      SmartDashboard.putNumber(
-          "Heading Degrees", Double.valueOf((-pose.getRotation().getDegrees() + 360) % 360));
-    }
+    ChassisSpeeds speeds = speedsSupplier.get();
+    SmartDashboard.putNumber("Speed MPH", NormUtil.norm(speeds) * MPS_TO_MPH);
 
-    if (speedsSupplier != null) {
-      ChassisSpeeds speeds = speedsSupplier.get();
+    SmartDashboard.putBoolean("Field Relative", fieldRelativeSupplier.getAsBoolean());
+    SmartDashboard.putBoolean("Angle Driven", angleDrivenSupplier.getAsBoolean());
 
-      SmartDashboard.putNumber("Speed MPH", NormUtil.norm(speeds) * 2.2369);
-    }
+    SmartDashboard.putBoolean("Reservoir Filling", reservoirTankFilling.getAsBoolean());
+    SmartDashboard.putNumber("Reservoir Pressure", reservoirTankPressure.getAsDouble());
+    SmartDashboard.putString("Reservoir Status", reservoirTankStatus.get());
 
-    if (speedLevelSupplier != null) {
-      SpeedLevel speedLevel = speedLevelSupplier.get();
+    SmartDashboard.putBoolean("Gateway Filling", gatewayTankFilling.getAsBoolean());
+    SmartDashboard.putNumber("Gateway Pressure", gatewayTankPressure.getAsDouble());
+    SmartDashboard.putString("Gateway Status", gatewayTankStatus.get());
 
-      SmartDashboard.putString("Speed Level", speedLevel.name());
-      SmartDashboard.putString(
-          "Speed Transl", String.format("%.2f%%", speedLevel.getTranslationCoefficient() * 100));
-      SmartDashboard.putString(
-          "Speed Rot", String.format("%.2f%%", speedLevel.getRotationCoefficient() * 100));
-    }
-
-    if (fieldRelativeSupplier != null) {
-      SmartDashboard.putBoolean("Field Relative", fieldRelativeSupplier.getAsBoolean());
-    }
-
-    if (angleDrivenSupplier != null) {
-      SmartDashboard.putBoolean("Angle Driven", angleDrivenSupplier.getAsBoolean());
-    }
-
-    if (reservoirTankFilling != null) {
-      SmartDashboard.putBoolean("Reservoir Filling", reservoirTankFilling.getAsBoolean());
-    }
-
-    if (reservoirTankPressure != null) {
-      SmartDashboard.putNumber("Reservoir Pressure", reservoirTankPressure.getAsDouble());
-    }
-
-    if (reservoirTankStatus != null) {
-      SmartDashboard.putString("Reservoir Status", reservoirTankStatus.get());
-    }
-
-    if (gatewayTankFilling != null) {
-      SmartDashboard.putBoolean("Gateway Filling", gatewayTankFilling.getAsBoolean());
-    }
-
-    if (gatewayTankPressure != null) {
-      SmartDashboard.putNumber("Gateway Pressure", gatewayTankPressure.getAsDouble());
-    }
-
-    if (gatewayTankStatus != null) {
-      SmartDashboard.putString("Gateway Status", gatewayTankStatus.get());
-    }
-
-    if (readyToFireSupplier != null) {
-      SmartDashboard.putBoolean("Fire Accurate", readyToFireSupplier.getAsBoolean());
-    }
-
-    if (targetPressure != null) {
-      SmartDashboard.putNumber("Target Launch Pressure", targetPressure.getAsDouble());
-    }
-
-    if (backfillMode != null) {
-      SmartDashboard.putBoolean("Backfill Mode", backfillMode.getAsBoolean());
-    }
-
-    if (cannonOpen != null) {
-      SmartDashboard.putBoolean("Cannon Open", cannonOpen.getAsBoolean());
-    }
+    SmartDashboard.putBoolean("Fire Accurate", readyToFireSupplier.getAsBoolean());
+    SmartDashboard.putNumber("Target Launch Pressure", targetPressure.getAsDouble());
+    SmartDashboard.putBoolean("Backfill Mode", backfillMode.getAsBoolean());
+    SmartDashboard.putBoolean("Cannon Open", cannonOpen.getAsBoolean());
   }
 }
