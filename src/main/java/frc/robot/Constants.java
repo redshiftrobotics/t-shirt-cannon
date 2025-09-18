@@ -18,7 +18,7 @@ public final class Constants {
 
   public static final boolean TUNING_MODE = false;
 
-  private static RobotType robotType = RobotType.SIM_BOT;
+  private static RobotType robotType = RobotType.CANNON_BOT;
 
   public static final Alert wrongRobotTypeAlertReal =
       new Alert("Invalid robot selected, using cannon robot as default.", Alert.AlertType.kWarning);
