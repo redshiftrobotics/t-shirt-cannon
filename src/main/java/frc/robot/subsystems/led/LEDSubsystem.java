@@ -82,7 +82,8 @@ public class LEDSubsystem extends SubsystemBase {
     }
 
     public void setUp() {
-      pwm.setPulseTimeMicroseconds(2125);
+      // pwm.setPulseTimeMicroseconds(2125); // 5 VOLT MODE
+      pwm.setPulseTimeMicroseconds(2145); // 12 VOLT MODE
     }
 
     public BlinkenLEDPattern getTargetPattern() {

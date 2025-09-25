@@ -42,8 +42,8 @@ public class ControlConstants {
   public static final double shotTankPressureChange = 5.0;
 
   /** LED Patterns */
-  public static final BlinkenLEDPattern idlePattern = BlinkenLEDPattern.PARTY_PALETTE;
+  public static final BlinkenLEDPattern idlePattern = BlinkenLEDPattern.BREATH_GRAY;
 
-  public static final BlinkenLEDPattern loadedPattern = BlinkenLEDPattern.BPM_PARTY;
+  public static final BlinkenLEDPattern loadedPattern = BlinkenLEDPattern.BREATH_RED;
   public static final BlinkenLEDPattern firingPattern = BlinkenLEDPattern.STROBE_RED;
 }

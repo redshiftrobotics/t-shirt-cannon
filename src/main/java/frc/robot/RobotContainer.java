@@ -383,10 +383,16 @@ public class RobotContainer {
                     () -> xbox.setRumble(RumbleType.kBothRumble, 0))
                 .withName("Firing Rumble"));
 
+    // Manual toggle comprossor
+    xbox.povDown()
+        .toggleOnTrue(reservoirTank.startEnd(reservoirTank::pause, reservoirTank::unpause));
+
     // --- POV Robot Strafing ---
 
     for (int i = 0; i < 360; i += 45) {
       final Rotation2d angle = Rotation2d.fromDegrees(-i);
+
+      if (i == 180) continue;
 
       final ChassisSpeeds speeds =
           new ChassisSpeeds(
