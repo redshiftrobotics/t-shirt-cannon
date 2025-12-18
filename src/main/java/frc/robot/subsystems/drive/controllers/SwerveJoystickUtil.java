@@ -4,6 +4,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import java.util.Optional;
 
 public class SwerveJoystickUtil {
@@ -13,6 +14,13 @@ public class SwerveJoystickUtil {
 
   public static final double LINEAR_VELOCITY_EXPONENT = 2.0; // Square the joystick input
   public static final double ANGULAR_VELOCITY_EXPONENT = 2.0; // Square the joystick input
+
+  private static String speedMultiplierKey = "Speed Multiplier";
+  private static double speedMultiplierDefault = 0.1;
+
+  public SwerveJoystickUtil() {
+    SmartDashboard.putNumber(speedMultiplierKey, speedMultiplierDefault);
+  }
 
   public static Translation2d getTranslationMetersPerSecond(
       double xInput, double yInput, double maxTranslationSpeedMetersPerSecond) {
@@ -36,7 +44,9 @@ public class SwerveJoystickUtil {
         new Translation2d(magnitudeSquared, translation.getAngle());
 
     // return final value
-    return squaredLinearVelocity.times(maxTranslationSpeedMetersPerSecond);
+    return squaredLinearVelocity.times(
+        maxTranslationSpeedMetersPerSecond
+            * SmartDashboard.getNumber(speedMultiplierKey, speedMultiplierDefault));
   }
 
   public static double getOmegaRadiansPerSecond(
